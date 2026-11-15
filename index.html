@@ -373,7 +373,7 @@
     <!-- MAIN SCRIPT -->
     <script>
         const META_KEY = "com.add2e.grimoire/state";
-        const STORAGE_KEY = "add2e_grimoire_state_v9";
+        const STORAGE_KEY = "add2e_grimoire_state_v10";
 
         const defaultEntities = [
             {
@@ -621,6 +621,7 @@
             renderRoster();
         }
 
+        // --- MAP TOKEN BADGE & HP SYNC (Displaying Full Tactical Stats on Map) ---
         async function syncTokenOnMap(ent) {
             if (!isObrConnected || !OBR_SDK || !ent || !ent.tokenId) return;
             try {
@@ -628,10 +629,15 @@
                     for (let item of items) {
                         if (!item.text) item.text = {};
                         const deadIcon = ent.hp <= 0 ? "💀 " : "";
-                        item.text.plainText = `${deadIcon}${ent.name} (${ent.hp}/${ent.maxHp})`;
+                        const speed = ent.weaponSpeed !== undefined ? ent.weaponSpeed : 5;
+                        const init = ent.initiative !== undefined ? ent.initiative : '-';
+                        // Renders exact stats directly on the map token label
+                        item.text.plainText = `${deadIcon}${ent.name}\nHP: ${ent.hp}/${ent.maxHp} | TH: ${ent.thac0} | AC: ${ent.ac} | Spd: ${speed} | Init: #${init}`;
                     }
                 });
-            } catch (e) {}
+            } catch (e) {
+                console.warn("Token map sync warning:", e);
+            }
         }
 
         async function syncAllTokensToMap() {
@@ -646,7 +652,7 @@
                     count++;
                 }
             }
-            logAction(`🔗 Synced HP labels onto <b>${count}</b> linked Owlbear Rodeo map token(s).`);
+            logAction(`🔗 Synced full tactical stats onto <b>${count}</b> linked Owlbear Rodeo map token(s).`);
         }
 
         async function bindExistingEntityToMapToken(id) {
@@ -655,7 +661,7 @@
 
             if (!isObrConnected || !OBR_SDK) {
                 ent.tokenId = "sim_tok_" + Date.now();
-                logAction(`🔗 Simulated token linked to <b>${ent.name}</b> (${ent.hp}/${ent.maxHp}).`);
+                logAction(`🔗 Simulated token linked to <b>${ent.name}</b>.`);
                 syncState();
                 renderRoster();
                 return;
@@ -668,7 +674,7 @@
             }
             ent.tokenId = selection[0];
             await syncTokenOnMap(ent);
-            logAction(`🔗 Linked <b>${ent.name}</b> to map token and synced HP label <b>(${ent.hp}/${ent.maxHp})</b>!`);
+            logAction(`🔗 Linked <b>${ent.name}</b> to map token and pushed tactical stats!`);
             syncState();
             renderRoster();
         }
@@ -855,7 +861,7 @@
             const items = await OBR_SDK.scene.items.getItems(selection);
             const token = items[0];
             const rawName = (token.text && token.text.plainText) || token.name || "Linked Token";
-            const cleanName = rawName.replace(/\s*\(\d+\/\d+\)$/, "").replace(/^💀\s*/, "");
+            const cleanName = rawName.split("\n")[0].replace(/\s*\(\d+\/\d+\)$/, "").replace(/^💀\s*/, "");
             openAddModal('pc', cleanName, token.id);
         }
 
@@ -871,6 +877,7 @@
             logAction(`🎲 <b>Round ${currentRound} Initiative Rolled</b>: d10 + Speed applied (Lowest acts first).`);
             syncState();
             renderRoster();
+            syncAllTokensToMap();
         }
 
         async function nextTurn() {
@@ -901,6 +908,7 @@
             if (ent.initRoll !== undefined) {
                 ent.initiative = ent.initRoll + ent.weaponSpeed;
             }
+            syncTokenOnMap(ent);
             syncState();
             renderRoster();
         }
@@ -963,7 +971,6 @@
             logAction(`💥 <b>${ent.name}</b> deals <span class="text-red">${finalDmg} damage</span> (${diceStr} [${rolls.join(', ')}] ${signMod}).`);
         }
 
-        // --- RENDER ROSTER WITH TACTICAL BADGE LAYOUT ---
         function renderRoster() {
             const container = document.getElementById("rosterContainer");
             if (!container) return;
@@ -1038,7 +1045,6 @@
                     const statusBadgesHtml = (ent.statuses || []).map(s => `<span class="status-badge">${s}</span>`).join(" ");
 
                     card.innerHTML = `
-                        <!-- TOP HEADER INFO -->
                         <div class="row-between" style="cursor:pointer;" onclick="toggleExpand('${ent.id}')">
                             <div style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1;">
                                 <div style="font-weight:700; color:#fff; display:flex; align-items:center; gap:4px; font-size:13px;">
@@ -1054,7 +1060,6 @@
                             </div>
                         </div>
 
-                        <!-- 4 CORNER TACTICAL BADGES GRID (Inspired by image) -->
                         <div class="tactical-grid">
                             <div class="tac-badge badge-thac0" title="THAC0">
                                 <span class="tac-label">THAC0</span>
@@ -1085,7 +1090,6 @@
                             </div>
                         </div>
 
-                        <!-- BOTTOM HERO HP BAR -->
                         <div class="hero-hp-bar">
                             <span style="font-size:11px; opacity:0.9;">HP</span>
                             ${showEnemyStats ? `
@@ -1095,7 +1099,6 @@
                             `}
                         </div>
 
-                        <!-- EXPANDED DRAWER -->
                         <div class="drawer ${isExpanded ? '' : 'hidden'}">
                             ${!isEnemy ? `
                                 <div class="grid-6">
@@ -1603,7 +1606,7 @@
                                 const item = context.items[0];
                                 if (!item) return;
                                 const rawName = (item.text && item.text.plainText) || item.name || "Map Token";
-                                const cleanName = rawName.replace(/\s*\(\d+\/\d+\)$/, "").replace(/^💀\s*/, "");
+                                const cleanName = rawName.split("\n")[0].replace(/\s*\(\d+\/\d+\)$/, "").replace(/^💀\s*/, "");
                                 openAddModal('enemy', cleanName, item.id);
                             }
                         });
