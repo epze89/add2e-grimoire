@@ -71,24 +71,20 @@
         .input-mini { width: 44px; text-align: center; font-weight: 700; font-size: 10px; padding: 2px; background: #111827; }
         .input-spd { width: 32px; text-align: center; font-weight: 700; font-size: 10px; padding: 2px; color: #fcd34d; background: #111827; }
 
-        /* TACTICAL OVERLAY CARD (Inspiration from image layout) */
+        /* Tactical Card */
         .card { background: #111827; border: 1px solid #1f2937; border-radius: 8px; padding: 8px; display: flex; flex-direction: column; gap: 8px; margin-bottom: 6px; transition: opacity 0.2s; position: relative; }
         .card-turn { border-color: #f59e0b; box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.4); }
         .card-enemy { border-color: rgba(127, 29, 29, 0.5); }
         .card-dead { opacity: 0.6; }
 
-        /* 4-Corner Tactical Badges Grid */
         .tactical-grid { display: grid; grid-template-columns: 55px 1fr 55px; gap: 6px; align-items: center; }
         .tac-badge { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 3px 2px; border-radius: 4px; font-weight: 800; font-size: 13px; text-align: center; line-height: 1.1; }
-        
-        /* Badge Border Styles mimicking tactical layout */
-        .badge-thac0 { background: #0f172a; border: 2px solid #38bdf8; color: #38bdf8; } /* Blue Diamond feel */
-        .badge-ac { background: #0f172a; border: 2px solid #94a3b8; color: #f8fafc; }     /* Dark Shield feel */
-        .badge-spd { background: #0f172a; border: 2px solid #facc15; color: #facc15; }    /* Yellow Hex feel */
-        .badge-init { background: #0f172a; border: 2px solid #4ade80; color: #4ade80; }   /* Green Shield feel */
+        .badge-thac0 { background: #0f172a; border: 2px solid #38bdf8; color: #38bdf8; }
+        .badge-ac { background: #0f172a; border: 2px solid #94a3b8; color: #f8fafc; }
+        .badge-spd { background: #0f172a; border: 2px solid #facc15; color: #facc15; }
+        .badge-init { background: #0f172a; border: 2px solid #4ade80; color: #4ade80; }
         .tac-label { font-size: 7px; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.8; font-weight: 600; margin-bottom: 1px; }
 
-        /* Bottom Hero HP Bar (Inspired by image bottom red bar) */
         .hero-hp-bar { width: 100%; background: #991b1b; border: 1px solid #dc2626; border-radius: 4px; padding: 4px 8px; display: flex; justify-content: space-between; align-items: center; color: #fff; font-weight: 800; font-size: 13px; text-shadow: 0 1px 2px rgba(0,0,0,0.8); }
         .hero-hp-bar input { background: transparent; border: none; color: #fff; font-weight: 800; font-size: 13px; width: 65px; text-align: right; }
 
@@ -175,7 +171,7 @@
             <span id="obrStatusText">Browser Mode (Local Save)</span>
         </div>
         <div class="row-center">
-            <button onclick="syncAllTokensToMap()" class="btn-ghost" title="Push all linked HP labels to Owlbear Rodeo tokens" style="text-decoration:underline;">Sync Map HP</button>
+            <button onclick="syncAllTokensToMap()" class="btn-ghost" title="Push all linked HP & stats badges to Owlbear Rodeo tokens" style="text-decoration:underline;">Sync Map Badges</button>
             <button onclick="exportRosterJson()" class="btn-ghost" style="text-decoration:underline;">Export JSON</button>
             <label style="cursor:pointer; text-decoration:underline; color:#9ca3af;">
                 Import JSON
@@ -377,7 +373,7 @@
     <!-- MAIN SCRIPT -->
     <script>
         const META_KEY = "com.add2e.grimoire/state";
-        const STORAGE_KEY = "add2e_grimoire_state_v8";
+        const STORAGE_KEY = "add2e_grimoire_state_v9";
 
         const defaultEntities = [
             {
@@ -967,6 +963,7 @@
             logAction(`💥 <b>${ent.name}</b> deals <span class="text-red">${finalDmg} damage</span> (${diceStr} [${rolls.join(', ')}] ${signMod}).`);
         }
 
+        // --- RENDER ROSTER WITH TACTICAL BADGE LAYOUT ---
         function renderRoster() {
             const container = document.getElementById("rosterContainer");
             if (!container) return;
@@ -1040,7 +1037,6 @@
 
                     const statusBadgesHtml = (ent.statuses || []).map(s => `<span class="status-badge">${s}</span>`).join(" ");
 
-                    // TACTICAL LAYOUT MATCHING USER IMAGE (4 CORNER BADGES + BOTTOM HERO HP BAR)
                     card.innerHTML = `
                         <!-- TOP HEADER INFO -->
                         <div class="row-between" style="cursor:pointer;" onclick="toggleExpand('${ent.id}')">
@@ -1060,20 +1056,15 @@
 
                         <!-- 4 CORNER TACTICAL BADGES GRID (Inspired by image) -->
                         <div class="tactical-grid">
-                            <!-- TOP LEFT: THAC0 (Blue Diamond feel) -->
                             <div class="tac-badge badge-thac0" title="THAC0">
                                 <span class="tac-label">THAC0</span>
                                 <span>${displayThac0}</span>
                             </div>
-
-                            <!-- CENTER: QUICK ACTION / INITIATIVE HIGHLIGHT -->
                             <div style="text-align:center;">
                                 <span class="init-pill ${isTurn ? 'init-pill-active' : ''}" style="font-size:11px; padding:3px 8px;">
                                     ${isTurn ? '⭐ ACTIVE TURN' : `Init: #${displayInit}`}
                                 </span>
                             </div>
-
-                            <!-- TOP RIGHT: ARMOR CLASS (Dark Shield feel) -->
                             <div class="tac-badge badge-ac" title="Armor Class">
                                 <span class="tac-label">AC</span>
                                 <span>${displayAc}</span>
@@ -1081,24 +1072,20 @@
                         </div>
 
                         <div class="tactical-grid" style="grid-template-columns: 55px 1fr 55px;">
-                            <!-- BOTTOM LEFT: WEAPON SPEED (Yellow Hex feel) -->
                             <div class="tac-badge badge-spd" title="Weapon Speed / Cast Time">
                                 <span class="tac-label">Speed</span>
                                 <input type="number" value="${displaySpeed}" onchange="updateSpeed('${ent.id}', this.value)" class="input-spd" style="width:38px; background:transparent; border:none; color:#facc15; font-size:13px; text-align:center;">
                             </div>
-
                             <div style="text-align:center; font-size:10px; color:#9ca3af;">
                                 Tap card header to expand details
                             </div>
-
-                            <!-- BOTTOM RIGHT: INITIATIVE SCORE (Green Shield feel) -->
                             <div class="tac-badge badge-init" title="Combat Initiative">
                                 <span class="tac-label">Init #</span>
                                 <span>${displayInit}</span>
                             </div>
                         </div>
 
-                        <!-- BOTTOM HERO HP BAR (Exact style reference from user image) -->
+                        <!-- BOTTOM HERO HP BAR -->
                         <div class="hero-hp-bar">
                             <span style="font-size:11px; opacity:0.9;">HP</span>
                             ${showEnemyStats ? `
