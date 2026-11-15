@@ -30,7 +30,7 @@
         .row-center { display: flex; align-items: center; gap: 6px; }
         .bar-box { background: #111827; border: 1px solid #1f2937; border-radius: 6px; padding: 6px 8px; }
         .xp-banner { background: rgba(17, 24, 39, 0.9); border: 1px solid rgba(120, 53, 15, 0.5); border-radius: 6px; padding: 8px; }
-        main { flex: 1; overflow-y: auto; max-height: 410px; display: flex; flex-direction: column; gap: 10px; padding-right: 2px; }
+        main { flex: 1; overflow-y: auto; max-height: 420px; display: flex; flex-direction: column; gap: 10px; padding-right: 2px; }
         
         /* Typography & Colors */
         .title-amber { font-weight: 700; font-size: 14px; color: #f59e0b; letter-spacing: 0.03em; }
@@ -71,20 +71,26 @@
         .input-mini { width: 44px; text-align: center; font-weight: 700; font-size: 10px; padding: 2px; background: #111827; }
         .input-spd { width: 32px; text-align: center; font-weight: 700; font-size: 10px; padding: 2px; color: #fcd34d; background: #111827; }
 
-        /* Group & Entity Cards */
-        .group-header { background: #090a0f; padding: 4px 8px; border-radius: 4px; border: 1px solid #1f2937; font-size: 11px; font-weight: 700; display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
-        .card { background: #111827; border: 1px solid #1f2937; border-radius: 8px; padding: 8px; display: flex; flex-direction: column; gap: 6px; margin-bottom: 6px; transition: opacity 0.2s; }
+        /* TACTICAL OVERLAY CARD (Inspiration from image layout) */
+        .card { background: #111827; border: 1px solid #1f2937; border-radius: 8px; padding: 8px; display: flex; flex-direction: column; gap: 8px; margin-bottom: 6px; transition: opacity 0.2s; position: relative; }
         .card-turn { border-color: #f59e0b; box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.4); }
         .card-enemy { border-color: rgba(127, 29, 29, 0.5); }
         .card-dead { opacity: 0.6; }
-        .init-pill { background: #1f2937; color: #818cf8; padding: 2px 6px; border-radius: 4px; font-family: monospace; font-weight: 700; font-size: 10px; }
-        .init-pill-active { color: #fbbf24; border: 1px solid #f59e0b; }
-        .stat-pill { background: #1f2937; padding: 2px 5px; border-radius: 4px; text-align: center; min-width: 34px; }
-        .stat-label { display: block; font-size: 8px; color: #9ca3af; text-transform: uppercase; }
 
-        /* HP Bar */
-        .hp-track { width: 100%; background: #1f2937; height: 4px; border-radius: 99px; overflow: hidden; }
-        .hp-fill { height: 100%; transition: width 0.25s ease; }
+        /* 4-Corner Tactical Badges Grid */
+        .tactical-grid { display: grid; grid-template-columns: 55px 1fr 55px; gap: 6px; align-items: center; }
+        .tac-badge { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 3px 2px; border-radius: 4px; font-weight: 800; font-size: 13px; text-align: center; line-height: 1.1; }
+        
+        /* Badge Border Styles mimicking tactical layout */
+        .badge-thac0 { background: #0f172a; border: 2px solid #38bdf8; color: #38bdf8; } /* Blue Diamond feel */
+        .badge-ac { background: #0f172a; border: 2px solid #94a3b8; color: #f8fafc; }     /* Dark Shield feel */
+        .badge-spd { background: #0f172a; border: 2px solid #facc15; color: #facc15; }    /* Yellow Hex feel */
+        .badge-init { background: #0f172a; border: 2px solid #4ade80; color: #4ade80; }   /* Green Shield feel */
+        .tac-label { font-size: 7px; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.8; font-weight: 600; margin-bottom: 1px; }
+
+        /* Bottom Hero HP Bar (Inspired by image bottom red bar) */
+        .hero-hp-bar { width: 100%; background: #991b1b; border: 1px solid #dc2626; border-radius: 4px; padding: 4px 8px; display: flex; justify-content: space-between; align-items: center; color: #fff; font-weight: 800; font-size: 13px; text-shadow: 0 1px 2px rgba(0,0,0,0.8); }
+        .hero-hp-bar input { background: transparent; border: none; color: #fff; font-weight: 800; font-size: 13px; width: 65px; text-align: right; }
 
         /* Expandable Drawer Grids */
         .drawer { border-top: 1px solid #1f2937; padding-top: 6px; display: flex; flex-direction: column; gap: 6px; }
@@ -371,7 +377,7 @@
     <!-- MAIN SCRIPT -->
     <script>
         const META_KEY = "com.add2e.grimoire/state";
-        const STORAGE_KEY = "add2e_grimoire_state_v7";
+        const STORAGE_KEY = "add2e_grimoire_state_v8";
 
         const defaultEntities = [
             {
@@ -417,7 +423,6 @@
         let OBR_SDK = null;
         let isObrConnected = false;
 
-        // Safe DOM setter helper
         function setVal(id, val) {
             const el = document.getElementById(id);
             if (el) el.value = val !== undefined && val !== null ? val : "";
@@ -994,7 +999,7 @@
                 const header = document.createElement("div");
                 header.className = "group-header";
                 header.style.color = g.color;
-                header.innerHTML = `<span>${g.title} (${groupEntities.length})</span><span class="text-muted">d10 + Spd</span>`;
+                header.innerHTML = `<span>${g.title} (${groupEntities.length})</span><span class="text-muted">Tactical View</span>`;
                 groupWrapper.appendChild(header);
 
                 groupEntities.forEach(ent => {
@@ -1004,17 +1009,15 @@
                     const isEnemy = ent.type === "enemy";
                     const isDead = ent.hp <= 0;
                     const hpPercent = Math.max(0, Math.min(100, (ent.hp / ent.maxHp) * 100));
-                    const hpColor = hpPercent > 50 ? '#059669' : hpPercent > 25 ? '#d97706' : '#dc2626';
 
                     const card = document.createElement("div");
                     card.className = `card ${isTurn ? 'card-turn' : ''} ${isEnemy ? 'card-enemy' : ''} ${isDead ? 'card-dead' : ''}`;
 
-                    const initScore = ent.initiative !== undefined ? ent.initiative : '-';
-                    const initBreakdown = ent.initRoll !== undefined ? `d10 (${ent.initRoll}) + Spd (${ent.weaponSpeed || 5})` : 'Not rolled';
-
                     const showEnemyStats = gmMode || !isEnemy;
                     const displayThac0 = showEnemyStats ? ent.thac0 : "??";
                     const displayAc = showEnemyStats ? ent.ac : "??";
+                    const displaySpeed = ent.weaponSpeed !== undefined ? ent.weaponSpeed : 5;
+                    const displayInit = ent.initiative !== undefined ? ent.initiative : '-';
 
                     let enemyHealthDesc = "Healthy";
                     if (hpPercent <= 0) enemyHealthDesc = "Dead 💀";
@@ -1022,7 +1025,7 @@
                     else if (hpPercent < 50) enemyHealthDesc = "Wounded 🟡";
                     else if (hpPercent < 75) enemyHealthDesc = "Injured 🟠";
 
-                    const displayHpValue = showEnemyStats ? `${ent.hp}/${ent.maxHp}` : enemyHealthDesc;
+                    const displayHpValue = showEnemyStats ? `${ent.hp} / ${ent.maxHp}` : enemyHealthDesc;
 
                     let awardBtnText = "🎁 Award XP";
                     const hasWisBonus = (ent.wis || 10) >= 18;
@@ -1037,58 +1040,83 @@
 
                     const statusBadgesHtml = (ent.statuses || []).map(s => `<span class="status-badge">${s}</span>`).join(" ");
 
+                    // TACTICAL LAYOUT MATCHING USER IMAGE (4 CORNER BADGES + BOTTOM HERO HP BAR)
                     card.innerHTML = `
-                        <div class="row-between">
-                            <div class="row-center" style="cursor:pointer; flex:1; min-width:0;" onclick="toggleExpand('${ent.id}')">
-                                <span class="init-pill ${isTurn ? 'init-pill-active' : ''}" title="Total Initiative: ${initBreakdown}">#${initScore}</span>
-                                <div style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
-                                    <div style="font-weight:700; color:#fff; display:flex; align-items:center; gap:4px;">
-                                        ${isDead ? '💀 ' : ''}${ent.name} ${ent.tokenId ? '<span title="Synced to Owlbear Rodeo Map Token">🔗</span>' : ''}
-                                        ${statusBadgesHtml}
-                                    </div>
-                                    <div class="text-muted">${isEnemy ? `HD: ${ent.hd || '1'}` : `${ent.class1} ${ent.lvl1}${ent.class2 ? ' / ' + ent.class2 + ' ' + (ent.lvl2 || ent.lvl1) : ''}${ent.str === 18 && ent.exceptionalStr ? ' (18/' + ent.exceptionalStr + ')' : ''}`}</div>
+                        <!-- TOP HEADER INFO -->
+                        <div class="row-between" style="cursor:pointer;" onclick="toggleExpand('${ent.id}')">
+                            <div style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1;">
+                                <div style="font-weight:700; color:#fff; display:flex; align-items:center; gap:4px; font-size:13px;">
+                                    ${isDead ? '💀 ' : ''}${ent.name} ${ent.tokenId ? '<span title="Synced to Owlbear Rodeo Map Token">🔗</span>' : ''}
+                                    ${statusBadgesHtml}
                                 </div>
+                                <div class="text-muted">${isEnemy ? `HD: ${ent.hd || '1'}` : `${ent.class1} ${ent.lvl1}${ent.class2 ? ' / ' + ent.class2 + ' ' + (ent.lvl2 || ent.lvl1) : ''}${ent.str === 18 && ent.exceptionalStr ? ' (18/' + ent.exceptionalStr + ')' : ''}`}</div>
                             </div>
-
                             <div class="row-center">
-                                <div class="stat-pill" title="Weapon Speed / Cast Time">
-                                    <span class="stat-label">SPD</span>
-                                    <input type="number" value="${ent.weaponSpeed !== undefined ? ent.weaponSpeed : 5}" onchange="updateSpeed('${ent.id}', this.value)" class="input-spd">
-                                </div>
-                                <div class="stat-pill">
-                                    <span class="stat-label">THAC0</span>
-                                    <span class="text-amber">${displayThac0}</span>
-                                </div>
-                                <div class="stat-pill">
-                                    <span class="stat-label">AC</span>
-                                    <span class="text-blue">${displayAc}</span>
-                                </div>
-                                <div class="stat-pill" style="${!showEnemyStats ? 'min-width:75px;' : ''}">
-                                    <span class="stat-label">HP</span>
-                                    ${showEnemyStats ? `
-                                        <input type="text" value="${ent.hp}/${ent.maxHp}" onchange="updateHp('${ent.id}', this.value)" class="input-mini" title="Type -6 for damage, +4 for heal, or exact HP">
-                                    ` : `
-                                        <span style="font-weight:700; font-size:10px; color:${hpPercent < 50 ? '#f87171' : '#34d399'};">${displayHpValue}</span>
-                                    `}
-                                </div>
-                                <button onclick="rollAttack('${ent.id}')" title="Roll 1d20 Attack vs THAC0" class="btn-amber btn-icon">⚔️</button>
-                                <button onclick="rollDamage('${ent.id}')" title="Roll Weapon Damage (${ent.weaponDice || '1d6'})" class="btn-red btn-icon">💥</button>
-                                <button onclick="openEditModal('${ent.id}')" title="Edit Entity" class="btn-ghost">⚙️</button>
+                                <button onclick="event.stopPropagation(); rollAttack('${ent.id}')" title="Roll 1d20 Attack vs THAC0" class="btn-amber btn-icon">⚔️</button>
+                                <button onclick="event.stopPropagation(); rollDamage('${ent.id}')" title="Roll Weapon Damage" class="btn-red btn-icon">💥</button>
+                                <button onclick="event.stopPropagation(); openEditModal('${ent.id}')" title="Edit Entity" class="btn-ghost">⚙️</button>
                             </div>
                         </div>
 
-                        <div class="hp-track">
-                            <div class="hp-fill" style="width:${hpPercent}%; background:${hpColor};"></div>
+                        <!-- 4 CORNER TACTICAL BADGES GRID (Inspired by image) -->
+                        <div class="tactical-grid">
+                            <!-- TOP LEFT: THAC0 (Blue Diamond feel) -->
+                            <div class="tac-badge badge-thac0" title="THAC0">
+                                <span class="tac-label">THAC0</span>
+                                <span>${displayThac0}</span>
+                            </div>
+
+                            <!-- CENTER: QUICK ACTION / INITIATIVE HIGHLIGHT -->
+                            <div style="text-align:center;">
+                                <span class="init-pill ${isTurn ? 'init-pill-active' : ''}" style="font-size:11px; padding:3px 8px;">
+                                    ${isTurn ? '⭐ ACTIVE TURN' : `Init: #${displayInit}`}
+                                </span>
+                            </div>
+
+                            <!-- TOP RIGHT: ARMOR CLASS (Dark Shield feel) -->
+                            <div class="tac-badge badge-ac" title="Armor Class">
+                                <span class="tac-label">AC</span>
+                                <span>${displayAc}</span>
+                            </div>
                         </div>
 
+                        <div class="tactical-grid" style="grid-template-columns: 55px 1fr 55px;">
+                            <!-- BOTTOM LEFT: WEAPON SPEED (Yellow Hex feel) -->
+                            <div class="tac-badge badge-spd" title="Weapon Speed / Cast Time">
+                                <span class="tac-label">Speed</span>
+                                <input type="number" value="${displaySpeed}" onchange="updateSpeed('${ent.id}', this.value)" class="input-spd" style="width:38px; background:transparent; border:none; color:#facc15; font-size:13px; text-align:center;">
+                            </div>
+
+                            <div style="text-align:center; font-size:10px; color:#9ca3af;">
+                                Tap card header to expand details
+                            </div>
+
+                            <!-- BOTTOM RIGHT: INITIATIVE SCORE (Green Shield feel) -->
+                            <div class="tac-badge badge-init" title="Combat Initiative">
+                                <span class="tac-label">Init #</span>
+                                <span>${displayInit}</span>
+                            </div>
+                        </div>
+
+                        <!-- BOTTOM HERO HP BAR (Exact style reference from user image) -->
+                        <div class="hero-hp-bar">
+                            <span style="font-size:11px; opacity:0.9;">HP</span>
+                            ${showEnemyStats ? `
+                                <input type="text" value="${ent.hp}/${ent.maxHp}" onchange="updateHp('${ent.id}', this.value)" title="Type -6 for damage, +4 for heal, or exact HP">
+                            ` : `
+                                <span style="font-size:13px; font-weight:800;">${displayHpValue}</span>
+                            `}
+                        </div>
+
+                        <!-- EXPANDED DRAWER -->
                         <div class="drawer ${isExpanded ? '' : 'hidden'}">
                             ${!isEnemy ? `
                                 <div class="grid-6">
-                                    <button onclick="rollAbilityCheck('${ent.id}', 'STR', ${ent.str || 10})" class="roll-box"><span class="stat-label">STR ${ent.str === 18 && ent.exceptionalStr ? '/' + ent.exceptionalStr : ''}</span><span class="text-amber">${ent.str || 10}</span></button>
+                                    <button onclick="rollAbilityCheck('${ent.id}', 'STR', ${ent.str || 10})" class="roll-box"><span class="stat-label">STR</span><span class="text-amber">${ent.str || 10}</span></button>
                                     <button onclick="rollAbilityCheck('${ent.id}', 'DEX', ${ent.dex || 10})" class="roll-box"><span class="stat-label">DEX</span><span class="text-amber">${ent.dex || 10}</span></button>
                                     <button onclick="rollAbilityCheck('${ent.id}', 'CON', ${ent.con || 10})" class="roll-box"><span class="stat-label">CON</span><span class="text-amber">${ent.con || 10}</span></button>
                                     <button onclick="rollAbilityCheck('${ent.id}', 'INT', ${ent.int || 10})" class="roll-box"><span class="stat-label">INT</span><span class="text-amber">${ent.int || 10}</span></button>
-                                    <button onclick="rollAbilityCheck('${ent.id}', 'WIS', ${ent.wis || 10})" class="roll-box" title="${hasWisBonus ? '+10% XP Bonus Active' : 'Wisdom'}"><span class="stat-label">WIS ${hasWisBonus ? '⭐' : ''}</span><span class="text-amber">${ent.wis || 10}</span></button>
+                                    <button onclick="rollAbilityCheck('${ent.id}', 'WIS', ${ent.wis || 10})" class="roll-box"><span class="stat-label">WIS</span><span class="text-amber">${ent.wis || 10}</span></button>
                                     <button onclick="rollAbilityCheck('${ent.id}', 'CHA', ${ent.cha || 10})" class="roll-box"><span class="stat-label">CHA</span><span class="text-amber">${ent.cha || 10}</span></button>
                                 </div>
 
@@ -1105,12 +1133,12 @@
                                         <div class="row-between" style="flex-wrap:wrap;">
                                             <span class="row-center">
                                                 ${ent.class1} XP: <b class="text-amber">${ent.xp1 || 0}</b> <span class="text-muted">/ ${nextXp1}</span>
-                                                ${readyLvl1 ? `<button onclick="levelUpClass('${ent.id}', 1)" class="btn-emerald" title="Roll ${ent.class1} Hit Die, add CON bonus, and update THAC0 & Saves">⬆️ Level Up!</button>` : ''}
+                                                ${readyLvl1 ? `<button onclick="levelUpClass('${ent.id}', 1)" class="btn-emerald">⬆️ Level Up!</button>` : ''}
                                             </span>
                                             ${ent.class2 ? `
                                                 <span class="row-center">
                                                     ${ent.class2} XP: <b class="text-amber">${ent.xp2 || 0}</b> <span class="text-muted">/ ${nextXp2}</span>
-                                                    ${readyLvl2 ? `<button onclick="levelUpClass('${ent.id}', 2)" class="btn-emerald" title="Roll ${ent.class2} Hit Die, add CON bonus, and update THAC0 & Saves">⬆️ Level Up!</button>` : ''}
+                                                    ${readyLvl2 ? `<button onclick="levelUpClass('${ent.id}', 2)" class="btn-emerald">⬆️ Level Up!</button>` : ''}
                                                 </span>
                                             ` : ''}
                                         </div>
@@ -1119,13 +1147,13 @@
                                                 <input type="number" id="awardInput_${ent.id}" placeholder="Award XP..." style="width:90px;">
                                                 <button onclick="promptAwardXp('${ent.id}')" class="btn-amber" style="font-size:10px;">${awardBtnText}</button>
                                             </div>
-                                            <button onclick="bindExistingEntityToMapToken('${ent.id}')" class="btn-emerald-outline" title="Select a token on the Owlbear Rodeo map and click to link">${ent.tokenId ? '🔗 Re-link Token' : '🔗 Link Token'}</button>
+                                            <button onclick="bindExistingEntityToMapToken('${ent.id}')" class="btn-emerald-outline">${ent.tokenId ? '🔗 Re-link' : '🔗 Link Token'}</button>
                                         </div>
                                     </div>
                                 ` : `
                                     <div class="row-between">
                                         <span class="text-muted">NPC Token Sync:</span>
-                                        <button onclick="bindExistingEntityToMapToken('${ent.id}')" class="btn-emerald-outline">${ent.tokenId ? '🔗 Re-link Map Token' : '🔗 Link Map Token'}</button>
+                                        <button onclick="bindExistingEntityToMapToken('${ent.id}')" class="btn-emerald-outline">${ent.tokenId ? '🔗 Re-link' : '🔗 Link Token'}</button>
                                     </div>
                                 `}
                             ` : `
@@ -1135,7 +1163,7 @@
                                         <button onclick="rollMorale('${ent.id}')" class="btn-indigo" style="font-size:10px;">🎲 Roll Morale (2d10 vs ${ent.morale || 12})</button>
                                     </div>
                                     <div class="row-between">
-                                        <button onclick="bindExistingEntityToMapToken('${ent.id}')" class="btn-emerald-outline" style="font-size:10px;">${ent.tokenId ? '🔗 Token Linked' : '🔗 Link Token'}</button>
+                                        <button onclick="bindExistingEntityToMapToken('${ent.id}')" class="btn-emerald-outline" style="font-size:10px;">${ent.tokenId ? '🔗 Linked' : '🔗 Link Token'}</button>
                                         <button onclick="defeatMonster('${ent.id}')" ${ent.defeated ? 'disabled' : ''} class="${ent.defeated ? 'btn-gm-off' : 'btn-red'}" style="font-size:10px;">
                                             ${ent.defeated ? '✅ XP in Pool' : '💀 Defeat (To Pool)'}
                                         </button>
