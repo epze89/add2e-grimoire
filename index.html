@@ -44,7 +44,7 @@
 
         /* Buttons & Inputs */
         button { cursor: pointer; border: none; border-radius: 4px; font-size: 11px; font-weight: 600; padding: 4px 8px; color: #fff; transition: opacity 0.15s, transform 0.1s; }
-        button:hover { opacity: 0.92; }
+        button:hover { opacity: 0.9; }
         button:active { transform: scale(0.98); }
         button:disabled { opacity: 0.45; cursor: not-allowed; }
         .btn-amber { background: #d97706; }
@@ -52,20 +52,13 @@
         .btn-red { background: #991b1b; color: #fecaca; }
         .btn-indigo { background: #4338ca; }
         .btn-indigo-dark { background: #312e81; border: 1px solid #4f46e5; color: #c7d2fe; }
+        .btn-emerald { background: #059669; color: #ecfdf5; font-size: 10px; padding: 2px 6px; box-shadow: 0 0 8px rgba(16, 185, 129, 0.35); }
         .btn-emerald-outline { background: rgba(6, 78, 59, 0.6); border: 1px solid rgba(16, 185, 129, 0.5); color: #a7f3d0; font-size: 10px; }
-        .btn-lvlup { background: #059669; border: 1px solid #34d399; color: #ecfdf5; font-size: 10px; padding: 2px 6px; border-radius: 4px; animation: pulseBorder 1.5s infinite; }
-        @keyframes pulseBorder { 0%, 100% { box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.4); } 50% { box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.15); } }
         .btn-gm-on { background: rgba(120, 53, 15, 0.6); border: 1px solid rgba(217, 119, 6, 0.5); color: #fde68a; font-size: 10px; }
         .btn-gm-off { background: #1f2937; border: 1px solid #374151; color: #9ca3af; font-size: 10px; }
         .btn-icon { padding: 4px 6px; font-size: 11px; }
         .btn-ghost { background: transparent; color: #9ca3af; padding: 2px 4px; }
-
-        /* Quick Category Selector Pills in Modal */
-        .type-selector { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
-        .type-btn { background: #1f2937; border: 1px solid #374151; color: #9ca3af; padding: 6px 4px; border-radius: 6px; font-size: 11px; font-weight: 700; text-align: center; }
-        .type-btn.active-pc { background: rgba(217, 119, 6, 0.25); border-color: #f59e0b; color: #fbbf24; }
-        .type-btn.active-npc { background: rgba(30, 64, 175, 0.35); border-color: #60a5fa; color: #bfdbfe; }
-        .type-btn.active-enemy { background: rgba(153, 27, 27, 0.35); border-color: #f87171; color: #fecaca; }
+        .status-badge { background: #1e1b4b; border: 1px solid #4338ca; color: #c7d2fe; font-size: 9px; padding: 1px 4px; border-radius: 3px; font-weight: 600; display: inline-flex; align-items: center; gap: 2px; }
 
         input, select {
             background: #1f2937;
@@ -113,7 +106,6 @@
         .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.82); display: flex; align-items: center; justify-content: center; z-index: 50; padding: 10px; overflow-y: auto; }
         .modal-box { background: #111827; border: 1px solid #374151; width: 100%; max-width: 390px; border-radius: 8px; padding: 12px; display: flex; flex-direction: column; gap: 8px; max-height: 95vh; overflow-y: auto; }
         .modal-box input, .modal-box select { width: 100%; }
-        .token-badge { background: rgba(6, 78, 59, 0.5); border: 1px solid #10b981; color: #a7f3d0; padding: 4px 8px; border-radius: 4px; font-size: 10px; display: flex; justify-content: space-between; align-items: center; }
         .hidden { display: none !important; }
     </style>
 </head>
@@ -127,7 +119,7 @@
                 <span id="roundBadge" onclick="resetRounds()" class="badge-round" title="Click to reset combat round to Rd 1">Rd 1</span>
             </div>
             <div class="row-center">
-                <button onclick="linkSelectedMapToken()" class="btn-emerald-outline" title="Add or link currently selected map token(s)">🔗 + Map Token</button>
+                <button onclick="linkSelectedMapToken()" class="btn-emerald-outline" title="Create a new entity from the selected Owlbear Rodeo token">🔗 + From Token</button>
                 <button onclick="toggleGmMode()" id="gmModeBtn" class="btn-gm-on">🔒 <span id="gmModeText">GM Mode: ON</span></button>
             </div>
         </div>
@@ -137,7 +129,7 @@
             <div class="row-center">
                 <button onclick="openAddModal('pc')" class="btn-amber">+ PC</button>
                 <button onclick="openAddModal('npc')" class="btn-blue">+ NPC</button>
-                <button onclick="openAddModal('enemy')" class="btn-red">+ Monster</button>
+                <button onclick="openAddModal('enemy')" class="btn-red">+ Enemy</button>
             </div>
             <div class="row-center">
                 <button onclick="rollAllInitiative()" class="btn-indigo" title="Roll 1d10 + Speed Factor (Lowest acts first)">🎲 Init</button>
@@ -146,7 +138,7 @@
                     <option value="all">All</option>
                     <option value="pc">PCs</option>
                     <option value="npc">NPCs</option>
-                    <option value="enemy">Monsters</option>
+                    <option value="enemy">Enemies</option>
                 </select>
             </div>
         </div>
@@ -167,7 +159,7 @@
 
     <!-- LIVE LOG / RESULT BANNER -->
     <div id="actionLog">
-        <span id="actionLogText">Right-click any map token or click + PC / + Monster to begin...</span>
+        <span id="actionLogText">Select a token or click any stat, save, or weapon button to roll...</span>
     </div>
 
     <!-- FOOTER: OBR STATUS & BACKUP -->
@@ -177,6 +169,7 @@
             <span id="obrStatusText">Browser Mode (Local Save)</span>
         </div>
         <div class="row-center">
+            <button onclick="syncAllTokensToMap()" class="btn-ghost" title="Push all linked HP labels to Owlbear Rodeo tokens" style="text-decoration:underline;">Sync Map HP</button>
             <button onclick="exportRosterJson()" class="btn-ghost" style="text-decoration:underline;">Export JSON</button>
             <label style="cursor:pointer; text-decoration:underline; color:#9ca3af;">
                 Import JSON
@@ -185,7 +178,7 @@
         </div>
     </footer>
 
-    <!-- ADD/EDIT/ASSIGN ENTITY MODAL -->
+    <!-- ADD/EDIT ENTITY MODAL -->
     <div id="entityModal" class="modal-backdrop hidden">
         <div class="modal-box">
             <div class="row-between">
@@ -195,26 +188,19 @@
             <input type="hidden" id="editEntityId">
             <input type="hidden" id="modalTokenId">
 
-            <!-- LINKED MAP TOKEN INDICATOR -->
-            <div id="linkedTokenBanner" class="token-badge hidden">
-                <span id="linkedTokenText">🔗 Linked to Map Token</span>
-                <button type="button" onclick="unlinkModalToken()" class="btn-ghost" style="color:#fca5a5; font-size:10px;">Unlink</button>
-            </div>
-
-            <!-- 1-CLICK GROUP ASSIGNMENT SELECTOR (PC / NPC / MONSTER) -->
-            <div>
-                <label class="text-muted" style="display:block; margin-bottom:4px;">Assign to Group Category</label>
-                <input type="hidden" id="modalType" value="pc">
-                <div class="type-selector">
-                    <button type="button" id="typeBtn_pc" onclick="selectModalCategory('pc')" class="type-btn active-pc">🛡️ PC</button>
-                    <button type="button" id="typeBtn_npc" onclick="selectModalCategory('npc')" class="type-btn">👤 NPC</button>
-                    <button type="button" id="typeBtn_enemy" onclick="selectModalCategory('enemy')" class="type-btn">👹 Monster</button>
+            <div class="grid-2">
+                <div>
+                    <label class="text-muted">Name</label>
+                    <input type="text" id="modalName">
                 </div>
-            </div>
-
-            <div>
-                <label class="text-muted">Name</label>
-                <input type="text" id="modalName">
+                <div>
+                    <label class="text-muted">Group Category</label>
+                    <select id="modalType" onchange="toggleEntityFields()">
+                        <option value="pc">Player Character (PC)</option>
+                        <option value="npc">Non-Player Character (NPC)</option>
+                        <option value="enemy">Enemy / Monster</option>
+                    </select>
+                </div>
             </div>
 
             <div class="grid-3">
@@ -226,7 +212,7 @@
                     </div>
                 </div>
                 <div>
-                    <label class="text-muted">THAC0 (Auto)</label>
+                    <label class="text-muted" id="thac0Label">THAC0 (Auto)</label>
                     <input type="number" id="modalThac0" value="20" style="text-align:center; color:#fbbf24; font-weight:700;">
                 </div>
                 <div>
@@ -235,19 +221,37 @@
                 </div>
             </div>
 
-            <!-- WEAPON STATS & SPEED FACTOR -->
+            <!-- WEAPON STATS, SPEED FACTOR & TO-HIT MOD -->
             <div class="grid-3 bar-box">
                 <div>
                     <label class="text-muted">Weapon Dice</label>
                     <input type="text" id="modalWeaponDice" value="1d8" style="text-align:center;">
                 </div>
                 <div>
-                    <label class="text-muted">Dmg Mod (+Str)</label>
-                    <input type="number" id="modalDmgMod" value="1" style="text-align:center;">
+                    <label class="text-muted" title="Magic weapon, spec, or Str to-hit bonus">+Hit Mod</label>
+                    <input type="number" id="modalToHit" value="0" style="text-align:center;">
                 </div>
                 <div>
                     <label class="text-amber" style="font-size:10px;">Speed / Cast</label>
                     <input type="number" id="modalWeaponSpeed" value="5" style="text-align:center; color:#fbbf24; font-weight:700;">
+                </div>
+            </div>
+
+            <!-- ENEMY / MONSTER SPECIFIC FIELDS (Hit Dice & Morale) -->
+            <div id="enemyFields" class="hidden" style="border-top:1px solid #1f2937; padding-top:8px;">
+                <div class="grid-3">
+                    <div>
+                        <label class="text-muted">Hit Dice (HD)</label>
+                        <input type="text" id="modalHd" value="3+1" onchange="autoCalcMonsterThac0()" style="text-align:center;" title="e.g. 3+1 (Auto-sets THAC0 = 20 - HD)">
+                    </div>
+                    <div>
+                        <label class="text-muted">Morale (2d10)</label>
+                        <input type="number" id="modalMorale" value="12" style="text-align:center;">
+                    </div>
+                    <div>
+                        <label class="text-muted">XP Reward</label>
+                        <input type="number" id="modalMonsterXp" value="65" style="text-align:center;">
+                    </div>
                 </div>
             </div>
 
@@ -281,7 +285,6 @@
                     </div>
                 </div>
 
-                <!-- PRIMARY CLASS LEVEL & XP -->
                 <div class="grid-2">
                     <div>
                         <label id="lblLvl1" class="text-muted">Level</label>
@@ -293,7 +296,6 @@
                     </div>
                 </div>
 
-                <!-- SECONDARY CLASS LEVEL & XP (HIDDEN WHEN SINGLE-CLASS) -->
                 <div id="multiClassRow" class="grid-2 hidden">
                     <div>
                         <label id="lblLvl2" class="text-muted">Class 2 Level</label>
@@ -305,11 +307,23 @@
                     </div>
                 </div>
 
-                <!-- 6 ABILITY SCORES -->
+                <!-- 6 ABILITY SCORES & EXCEPTIONAL STRENGTH -->
                 <div>
-                    <label class="text-amber" style="font-size:10px; display:block; margin-bottom:3px;">AD&D 2e Ability Scores</label>
+                    <div class="row-between" style="margin-bottom:3px;">
+                        <label class="text-amber" style="font-size:10px;">AD&D 2e Ability Scores</label>
+                        <div id="excStrContainer" class="row-center hidden">
+                            <span class="text-muted" style="font-size:9px;">Exceptional STR:</span>
+                            <select id="modalExceptionalStr" style="width:75px; font-size:10px; padding:1px;">
+                                <option value="01">01–50</option>
+                                <option value="51">51–75</option>
+                                <option value="76">76–90</option>
+                                <option value="91">91–99</option>
+                                <option value="00">00</option>
+                            </select>
+                        </div>
+                    </div>
                     <div class="grid-6">
-                        <div><span class="stat-label">STR</span><input type="number" id="modalStr" value="15" style="text-align:center;"></div>
+                        <div><span class="stat-label">STR</span><input type="number" id="modalStr" value="15" onchange="checkExceptionalStrengthVisibility()" style="text-align:center;"></div>
                         <div><span class="stat-label">DEX</span><input type="number" id="modalDex" value="14" style="text-align:center;"></div>
                         <div><span class="stat-label">CON</span><input type="number" id="modalCon" onchange="autoCalcAll2eStats(true)" value="14" style="text-align:center;"></div>
                         <div><span class="stat-label">INT</span><input type="number" id="modalInt" value="12" style="text-align:center;"></div>
@@ -318,24 +332,29 @@
                     </div>
                 </div>
 
-                <!-- 5 SAVING THROWS -->
+                <!-- STATUS / CONDITIONS SELECTOR -->
                 <div>
-                    <label class="text-emerald" style="font-size:10px; display:block; margin-bottom:3px;">AD&D 2e Saving Throws (Auto-picked by Class & Level)</label>
-                    <div class="grid-5">
-                        <div><span class="stat-label" title="Paralyzation, Poison, or Death Magic">PPD</span><input type="number" id="modalSavePPD" value="14" style="text-align:center; color:#34d399; font-weight:700;"></div>
-                        <div><span class="stat-label" title="Rod, Staff, or Wand">RSW</span><input type="number" id="modalSaveRSW" value="16" style="text-align:center; color:#34d399; font-weight:700;"></div>
-                        <div><span class="stat-label" title="Petrification or Polymorph">PP</span><input type="number" id="modalSavePP" value="15" style="text-align:center; color:#34d399; font-weight:700;"></div>
-                        <div><span class="stat-label" title="Breath Weapon">BW</span><input type="number" id="modalSaveBW" value="17" style="text-align:center; color:#34d399; font-weight:700;"></div>
-                        <div><span class="stat-label" title="Spell">SPL</span><input type="number" id="modalSaveSPL" value="17" style="text-align:center; color:#34d399; font-weight:700;"></div>
+                    <label class="text-muted" style="font-size:10px; display:block; margin-bottom:3px;">Active Combat Status Tags</label>
+                    <div class="row-center" style="gap:4px; flex-wrap:wrap;">
+                        <label class="status-badge"><input type="checkbox" value="Casting ⚡" class="status-chk"> Casting ⚡</label>
+                        <label class="status-badge"><input type="checkbox" value="Blessed ✨" class="status-chk"> Blessed ✨</label>
+                        <label class="status-badge"><input type="checkbox" value="Hasted 💨" class="status-chk"> Hasted 💨</label>
+                        <label class="status-badge"><input type="checkbox" value="Paralyzed 🌀" class="status-chk"> Paralyzed 🌀</label>
+                        <label class="status-badge"><input type="checkbox" value="Blinded 👁️" class="status-chk"> Blinded 👁️</label>
+                        <label class="status-badge"><input type="checkbox" value="Prone ⬇️" class="status-chk"> Prone ⬇️</label>
                     </div>
                 </div>
-            </div>
 
-            <!-- ENEMY / MONSTER SPECIFIC FIELDS -->
-            <div id="enemyFields" class="hidden" style="border-top:1px solid #1f2937; padding-top:8px;">
+                <!-- 5 SAVING THROWS -->
                 <div>
-                    <label class="text-muted">XP Value upon defeat</label>
-                    <input type="number" id="modalMonsterXp" value="65">
+                    <label class="text-emerald" style="font-size:10px; display:block; margin-bottom:3px;">AD&D 2e Saving Throws</label>
+                    <div class="grid-5">
+                        <div><span class="stat-label">PPD</span><input type="number" id="modalSavePPD" value="14" style="text-align:center; color:#34d399; font-weight:700;"></div>
+                        <div><span class="stat-label">RSW</span><input type="number" id="modalSaveRSW" value="16" style="text-align:center; color:#34d399; font-weight:700;"></div>
+                        <div><span class="stat-label">PP</span><input type="number" id="modalSavePP" value="15" style="text-align:center; color:#34d399; font-weight:700;"></div>
+                        <div><span class="stat-label">BW</span><input type="number" id="modalSaveBW" value="17" style="text-align:center; color:#34d399; font-weight:700;"></div>
+                        <div><span class="stat-label">SPL</span><input type="number" id="modalSaveSPL" value="17" style="text-align:center; color:#34d399; font-weight:700;"></div>
+                    </div>
                 </div>
             </div>
 
@@ -352,7 +371,7 @@
     <!-- MAIN SCRIPT -->
     <script>
         const META_KEY = "com.add2e.grimoire/state";
-        const STORAGE_KEY = "add2e_grimoire_state_v4";
+        const STORAGE_KEY = "add2e_grimoire_state_v5";
 
         const defaultEntities = [
             {
@@ -360,10 +379,11 @@
                 name: "Thorin Ironhand",
                 type: "pc",
                 hp: 16, maxHp: 16, thac0: 19, ac: 3,
-                weaponDice: "1d8", dmgMod: 1, weaponSpeed: 5, initiative: 8, initRoll: 3,
+                weaponDice: "1d8", dmgMod: 1, toHitMod: 1, weaponSpeed: 5, initiative: 8, initRoll: 3,
                 class1: "Fighter", class2: "Thief",
-                lvl1: 2, lvl2: 2, xp1: 2100, xp2: 1400,
-                str: 16, dex: 14, con: 17, int: 10, wis: 13, cha: 9,
+                lvl1: 2, lvl2: 2, xp1: 2100, xp2: 2500,
+                str: 18, exceptionalStr: "51", dex: 14, con: 17, int: 10, wis: 13, cha: 9,
+                statuses: ["Blessed ✨"],
                 saves: { ppd: 13, rsw: 14, pp: 12, bw: 16, spl: 15 }
             },
             {
@@ -371,18 +391,20 @@
                 name: "Sister Althea",
                 type: "npc",
                 hp: 7, maxHp: 7, thac0: 20, ac: 5,
-                weaponDice: "1d6", dmgMod: 0, weaponSpeed: 4, initiative: 9, initRoll: 5,
+                weaponDice: "1d6", dmgMod: 0, toHitMod: 0, weaponSpeed: 4, initiative: 9, initRoll: 5,
                 class1: "Priest", class2: "", lvl1: 1, lvl2: 1, xp1: 0, xp2: 0,
                 str: 12, dex: 10, con: 14, int: 12, wis: 18, cha: 13,
+                statuses: [],
                 saves: { ppd: 10, rsw: 14, pp: 13, bw: 16, spl: 15 }
             },
             {
                 id: "mon_1",
                 name: "Goblin Chieftain",
                 type: "enemy",
-                hp: 14, maxHp: 16, thac0: 19, ac: 5,
-                weaponDice: "1d6", dmgMod: 1, weaponSpeed: 6, initiative: 10, initRoll: 4,
-                monsterXp: 120, defeated: false
+                hp: 14, maxHp: 16, thac0: 17, ac: 5,
+                weaponDice: "1d6", dmgMod: 1, toHitMod: 0, weaponSpeed: 6, initiative: 10, initRoll: 4,
+                hd: "3+1", morale: 12, monsterXp: 120, defeated: false,
+                statuses: []
             }
         ];
 
@@ -394,11 +416,7 @@
         let gmMode = true;
         let OBR_SDK = null;
         let isObrConnected = false;
-        let pendingBatchTokens = []; // Holds multiple right-clicked map tokens if batch-adding
 
-        // ============================================================================
-        // OFFICIAL AD&D 2E TABLES: THAC0, SAVING THROWS, AND NEXT-LEVEL XP THRESHOLDS
-        // ============================================================================
         const XP_TABLES = {
             Fighter: [0, 2000, 4000, 8000, 16000, 32000, 64000, 125000, 250000, 500000],
             Paladin: [0, 2250, 4500, 9000, 18000, 36000, 75000, 150000, 300000, 600000],
@@ -424,22 +442,15 @@
             return "wizard";
         }
 
-        function getHitDieSides(className) {
-            const g = get2eArchetype(className);
-            if (g === "warrior") return 10;
-            if (g === "priest") return 8;
-            if (g === "rogue") return 6;
-            return 4;
-        }
-
-        function getConHpBonus(conScore, isWarrior) {
-            const con = parseInt(conScore, 10) || 10;
-            if (con >= 18) return isWarrior ? 4 : 2;
-            if (con === 17) return isWarrior ? 3 : 2;
-            if (con === 16) return 2;
-            if (con === 15) return 1;
-            if (con <= 3) return -2;
-            if (con <= 6) return -1;
+        function getConHpBonus(con, isWarrior) {
+            const c = parseInt(con, 10) || 10;
+            if (c >= 19) return isWarrior ? 5 : 2;
+            if (c === 18) return isWarrior ? 4 : 2;
+            if (c === 17) return isWarrior ? 3 : 2;
+            if (c === 16) return 2;
+            if (c === 15) return 1;
+            if (c <= 3) return -2;
+            if (c <= 6) return -1;
             return 0;
         }
 
@@ -475,4 +486,1051 @@
                 else if (lvl <= 15) row = [5, 9, 8, 11, 10];
                 else if (lvl <= 18) row = [4, 8, 7, 10, 9];
                 else row = [2, 6, 5, 8, 7];
-            } else if (
+            } else if (group === "rogue") {
+                if (lvl <= 4) row = [13, 14, 12, 16, 15];
+                else if (lvl <= 8) row = [12, 12, 11, 15, 13];
+                else if (lvl <= 12) row = [11, 10, 10, 14, 11];
+                else if (lvl <= 16) row = [10, 8, 9, 13, 9];
+                else row = [9, 6, 8, 12, 7];
+            } else {
+                if (lvl <= 5) row = [14, 11, 13, 15, 12];
+                else if (lvl <= 10) row = [13, 9, 11, 13, 10];
+                else if (lvl <= 15) row = [11, 7, 9, 11, 8];
+                else row = [10, 5, 7, 9, 6];
+            }
+            return { ppd: row[0], rsw: row[1], pp: row[2], bw: row[3], spl: row[4] };
+        }
+
+        function calcBestEntityThac0(ent) {
+            let best = calcClassThac0(ent.class1, ent.lvl1);
+            if (ent.class2) {
+                best = Math.min(best, calcClassThac0(ent.class2, ent.lvl2 || 1));
+            }
+            return best;
+        }
+
+        function calcBestEntitySaves(ent) {
+            const s1 = calcClassSaves(ent.class1, ent.lvl1);
+            if (!ent.class2) return s1;
+            const s2 = calcClassSaves(ent.class2, ent.lvl2 || 1);
+            return {
+                ppd: Math.min(s1.ppd, s2.ppd),
+                rsw: Math.min(s1.rsw, s2.rsw),
+                pp: Math.min(s1.pp, s2.pp),
+                bw: Math.min(s1.bw, s2.bw),
+                spl: Math.min(s1.spl, s2.spl)
+            };
+        }
+
+        function checkExceptionalStrengthVisibility() {
+            const strVal = parseInt(document.getElementById("modalStr").value, 10) || 10;
+            const class1 = document.getElementById("modalClass1").value;
+            const isWarrior = ["Fighter", "Paladin", "Ranger"].includes(class1);
+            const container = document.getElementById("excStrContainer");
+            if (strVal === 18 && isWarrior) {
+                container.classList.remove("hidden");
+            } else {
+                container.classList.add("hidden");
+            }
+        }
+
+        function autoCalcMonsterThac0() {
+            const hdStr = document.getElementById("modalHd").value.trim();
+            const baseHd = parseInt(hdStr, 10) || 1;
+            // Standard AD&D 2e monster THAC0 approximation: 20 - HD (minimum 1)
+            const autoThac0 = Math.max(1, 20 - baseHd);
+            document.getElementById("modalThac0").value = autoThac0;
+        }
+
+        function rollMorale(id) {
+            const ent = entities.find(e => e.id === id);
+            if (!ent) return;
+            const target = ent.morale || 12;
+            const r1 = Math.floor(Math.random() * 10) + 1;
+            const r2 = Math.floor(Math.random() * 10) + 1;
+            const sum = r1 + r2;
+            const passed = sum <= target;
+            const badge = passed ? `<span class="text-emerald">HOLDS GROUND!</span>` : `<span class="text-red">BREAKS & FLEES!</span>`;
+            logAction(`🎲 <b>${ent.name}</b> Morale Check (2d10): rolled <b>${sum}</b> (${r1}+${r2}, Target &le; ${target}) &rarr; ${badge}`);
+        }
+
+        function levelUpClass(id, classIndex) {
+            const ent = entities.find(e => e.id === id);
+            if (!ent || ent.type === "enemy") return;
+
+            const isSecond = classIndex === 2;
+            const targetClass = isSecond ? ent.class2 : ent.class1;
+            if (!targetClass) return;
+
+            const oldLvl = (isSecond ? ent.lvl2 : ent.lvl1) || 1;
+            const newLvl = oldLvl + 1;
+            if (isSecond) ent.lvl2 = newLvl;
+            else ent.lvl1 = newLvl;
+
+            const group = get2eArchetype(targetClass);
+            const hasWarrior = get2eArchetype(ent.class1) === "warrior" || (ent.class2 && get2eArchetype(ent.class2) === "warrior");
+            const conBonus = getConHpBonus(ent.con, hasWarrior);
+
+            let hdSides = 4;
+            let nameLevelCap = 10;
+            let postCapFlatHp = 1;
+
+            if (group === "warrior") { hdSides = 10; nameLevelCap = 9; postCapFlatHp = 3; }
+            else if (group === "priest") { hdSides = 8; nameLevelCap = 9; postCapFlatHp = 2; }
+            else if (group === "rogue") { hdSides = 6; nameLevelCap = 10; postCapFlatHp = 2; }
+
+            let rawHpGain = 1;
+            let rollBreakdown = "";
+
+            if (newLvl <= nameLevelCap) {
+                const dieRoll = Math.floor(Math.random() * hdSides) + 1;
+                rawHpGain = Math.max(1, dieRoll + conBonus);
+                const signCon = conBonus >= 0 ? `+${conBonus}` : `${conBonus}`;
+                rollBreakdown = `1d${hdSides} (${dieRoll}) ${signCon} CON`;
+            } else {
+                rawHpGain = postCapFlatHp;
+                rollBreakdown = `fixed +${postCapFlatHp} post-name-level`;
+            }
+
+            let finalHpGain = rawHpGain;
+            if (ent.class2) {
+                finalHpGain = Math.max(1, Math.floor(rawHpGain / 2));
+                rollBreakdown += ` &divide; 2 multi-class`;
+            }
+
+            ent.maxHp += finalHpGain;
+            ent.hp += finalHpGain;
+            ent.thac0 = calcBestEntityThac0(ent);
+            ent.saves = calcBestEntitySaves(ent);
+
+            logAction(`🎉 <b>${ent.name}</b> reached <b>${targetClass} Level ${newLvl}</b>! Gained <b class="text-emerald">+${finalHpGain} HP</b> (${rollBreakdown}) &rarr; THAC0 <b>${ent.thac0}</b>!`);
+            syncTokenOnMap(ent);
+            syncState();
+            renderRoster();
+        }
+
+        async function syncTokenOnMap(ent) {
+            if (!isObrConnected || !OBR_SDK || !ent || !ent.tokenId) return;
+            try {
+                await OBR_SDK.scene.items.updateItems([ent.tokenId], (items) => {
+                    for (let item of items) {
+                        if (!item.text) item.text = {};
+                        const deadIcon = ent.hp <= 0 ? "💀 " : "";
+                        item.text.plainText = `${deadIcon}${ent.name} (${ent.hp}/${ent.maxHp})`;
+                    }
+                });
+            } catch (e) {}
+        }
+
+        async function syncAllTokensToMap() {
+            if (!isObrConnected || !OBR_SDK) {
+                logAction("ℹ️ Map Token Sync is active inside an Owlbear Rodeo room.");
+                return;
+            }
+            let count = 0;
+            for (const ent of entities) {
+                if (ent.tokenId) {
+                    await syncTokenOnMap(ent);
+                    count++;
+                }
+            }
+            logAction(`🔗 Synced HP labels onto <b>${count}</b> linked Owlbear Rodeo map token(s).`);
+        }
+
+        async function bindExistingEntityToMapToken(id) {
+            const ent = entities.find(e => e.id === id);
+            if (!ent) return;
+
+            if (!isObrConnected || !OBR_SDK) {
+                ent.tokenId = "sim_tok_" + Date.now();
+                logAction(`🔗 Simulated token linked to <b>${ent.name}</b> (${ent.hp}/${ent.maxHp}).`);
+                syncState();
+                renderRoster();
+                return;
+            }
+
+            const selection = await OBR_SDK.player.getSelection();
+            if (!selection || selection.length === 0) {
+                logAction(`⚠️ Select a token on the Owlbear Rodeo map first, then click <b>🔗 Link Token</b>.`);
+                return;
+            }
+            ent.tokenId = selection[0];
+            await syncTokenOnMap(ent);
+            logAction(`🔗 Linked <b>${ent.name}</b> to map token and synced HP label <b>(${ent.hp}/${ent.maxHp})</b>!`);
+            syncState();
+            renderRoster();
+        }
+
+        function updateMultiClassFieldVisibility() {
+            const class1 = document.getElementById("modalClass1").value;
+            const class2 = document.getElementById("modalClass2").value;
+            const multiRow = document.getElementById("multiClassRow");
+
+            if (class2) {
+                multiRow.classList.remove("hidden");
+                document.getElementById("lblLvl1").innerText = `${class1} Level`;
+                document.getElementById("lblXp1").innerText = `${class1} XP`;
+                document.getElementById("lblLvl2").innerText = `${class2} Level`;
+                document.getElementById("lblXp2").innerText = `${class2} XP`;
+            } else {
+                multiRow.classList.add("hidden");
+                document.getElementById("lblLvl1").innerText = "Level";
+                document.getElementById("lblXp1").innerText = "Experience (XP)";
+            }
+        }
+
+        function onClassSelectionChange() {
+            updateMultiClassFieldVisibility();
+            checkExceptionalStrengthVisibility();
+            autoCalcAll2eStats(true);
+        }
+
+        function autoCalcAll2eStats(recalcHp) {
+            const type = document.getElementById("modalType").value;
+            if (type === "enemy") return;
+
+            const class1 = document.getElementById("modalClass1").value;
+            const class2 = document.getElementById("modalClass2").value;
+            const lvl1 = parseInt(document.getElementById("modalLvl1").value, 10) || 1;
+            const lvl2 = parseInt(document.getElementById("modalLvl2").value, 10) || 1;
+            const con = parseInt(document.getElementById("modalCon").value, 10) || 10;
+
+            let bestThac0 = calcClassThac0(class1, lvl1);
+            if (class2) {
+                bestThac0 = Math.min(bestThac0, calcClassThac0(class2, lvl2));
+            }
+            document.getElementById("modalThac0").value = bestThac0;
+
+            const saves1 = calcClassSaves(class1, lvl1);
+            let finalSaves = { ...saves1 };
+            if (class2) {
+                const saves2 = calcClassSaves(class2, lvl2);
+                finalSaves = {
+                    ppd: Math.min(saves1.ppd, saves2.ppd),
+                    rsw: Math.min(saves1.rsw, saves2.rsw),
+                    pp: Math.min(saves1.pp, saves2.pp),
+                    bw: Math.min(saves1.bw, saves2.bw),
+                    spl: Math.min(saves1.spl, saves2.spl)
+                };
+            }
+            document.getElementById("modalSavePPD").value = finalSaves.ppd;
+            document.getElementById("modalSaveRSW").value = finalSaves.rsw;
+            document.getElementById("modalSavePP").value = finalSaves.pp;
+            document.getElementById("modalSaveBW").value = finalSaves.bw;
+            document.getElementById("modalSaveSPL").value = finalSaves.spl;
+
+            if (recalcHp) {
+                function getHdAvg(c) {
+                    const g = get2eArchetype(c);
+                    if (g === "warrior") return 6;
+                    if (g === "priest") return 5;
+                    if (g === "rogue") return 4;
+                    return 3;
+                }
+                const hasWarrior = get2eArchetype(class1) === "warrior" || (class2 && get2eArchetype(class2) === "warrior");
+                const conMod = getConHpBonus(con, hasWarrior);
+
+                let calcHp = 0;
+                if (class2) {
+                    const hp1 = lvl1 * (getHdAvg(class1) + conMod);
+                    const hp2 = lvl2 * (getHdAvg(class2) + conMod);
+                    calcHp = Math.max(2, Math.round((hp1 + hp2) / 2));
+                } else {
+                    calcHp = Math.max(lvl1 * 2, Math.round(lvl1 * (getHdAvg(class1) + conMod)));
+                }
+                document.getElementById("modalMaxHp").value = calcHp;
+                document.getElementById("modalHp").value = calcHp;
+            }
+        }
+
+        function loadLocalState() {
+            try {
+                const raw = localStorage.getItem(STORAGE_KEY);
+                if (raw) {
+                    const parsed = JSON.parse(raw);
+                    entities = parsed.entities || defaultEntities;
+                    combatXpPool = parsed.combatXpPool || 0;
+                    currentRound = parsed.currentRound || 1;
+                    activeTurnIndex = parsed.activeTurnIndex || 0;
+                } else {
+                    entities = defaultEntities;
+                }
+            } catch (e) {
+                entities = defaultEntities;
+            }
+        }
+
+        async function syncState() {
+            const payload = { entities, combatXpPool, currentRound, activeTurnIndex };
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+            } catch (e) {}
+            if (isObrConnected && OBR_SDK) {
+                try {
+                    await OBR_SDK.room.setMetadata({ [META_KEY]: payload });
+                } catch (e) {}
+            }
+        }
+
+        function setGmPermission(isGm) {
+            gmMode = isGm;
+            const btn = document.getElementById("gmModeBtn");
+            const txt = document.getElementById("gmModeText");
+            const distBtn = document.getElementById("distributeXpBtn");
+            if (gmMode) {
+                btn.className = "btn-gm-on";
+                txt.innerText = "GM Mode: ON";
+                distBtn.classList.remove("hidden");
+            } else {
+                btn.className = "btn-gm-off";
+                txt.innerText = "Player View";
+                distBtn.classList.add("hidden");
+            }
+            renderRoster();
+        }
+
+        function toggleGmMode() {
+            if (isObrConnected) {
+                logAction("🔒 Inside Owlbear Rodeo, GM permissions follow your room role.");
+                return;
+            }
+            setGmPermission(!gmMode);
+        }
+
+        function resetRounds() {
+            currentRound = 1;
+            activeTurnIndex = 0;
+            logAction("🔄 Combat tracker reset to <b>Round 1</b>.");
+            syncState();
+            renderRoster();
+        }
+
+        function clearXpPool() {
+            if (!gmMode) return;
+            combatXpPool = 0;
+            logAction("🧹 Cleared the Combat XP Pool.");
+            syncState();
+            renderRoster();
+        }
+
+        async function linkSelectedMapToken() {
+            if (!isObrConnected || !OBR_SDK) {
+                openAddModal('enemy', "Simulated Map Token", "sim_tok_" + Date.now());
+                return;
+            }
+            const selection = await OBR_SDK.player.getSelection();
+            if (!selection || selection.length === 0) {
+                logAction("⚠️ Select a token on the Owlbear Rodeo map first, then click <b>🔗 + From Token</b>.");
+                return;
+            }
+            const items = await OBR_SDK.scene.items.getItems(selection);
+            const token = items[0];
+            const rawName = (token.text && token.text.plainText) || token.name || "Linked Token";
+            const cleanName = rawName.replace(/\s*\(\d+\/\d+\)$/, "").replace(/^💀\s*/, "");
+            openAddModal('pc', cleanName, token.id);
+        }
+
+        function rollAllInitiative() {
+            entities.forEach(ent => {
+                const baseRoll = Math.floor(Math.random() * 10) + 1;
+                const speed = ent.weaponSpeed !== undefined ? ent.weaponSpeed : 5;
+                ent.initRoll = baseRoll;
+                ent.initiative = baseRoll + speed;
+            });
+            entities.sort((a, b) => a.initiative - b.initiative);
+            activeTurnIndex = 0;
+            logAction(`🎲 <b>Round ${currentRound} Initiative Rolled</b>: d10 + Speed applied (Lowest acts first).`);
+            syncState();
+            renderRoster();
+        }
+
+        async function nextTurn() {
+            if (entities.length === 0) return;
+            let attempts = 0;
+            do {
+                activeTurnIndex++;
+                if (activeTurnIndex >= entities.length) {
+                    activeTurnIndex = 0;
+                    currentRound++;
+                }
+                attempts++;
+            } while (entities[activeTurnIndex].hp <= 0 && attempts < entities.length);
+
+            const activeEnt = entities[activeTurnIndex];
+            logAction(`⏭️ <b>Round ${currentRound}</b>: Now acting &rarr; <b class="text-amber">${activeEnt.name}</b> (Init #${activeEnt.initiative})`);
+            if (isObrConnected && OBR_SDK && activeEnt.tokenId) {
+                try { await OBR_SDK.player.select([activeEnt.tokenId]); } catch (e) {}
+            }
+            syncState();
+            renderRoster();
+        }
+
+        function updateSpeed(id, val) {
+            const ent = entities.find(e => e.id === id);
+            if (!ent) return;
+            ent.weaponSpeed = parseInt(val, 10) || 0;
+            if (ent.initRoll !== undefined) {
+                ent.initiative = ent.initRoll + ent.weaponSpeed;
+            }
+            syncState();
+            renderRoster();
+        }
+
+        function rollAbilityCheck(id, statName, score) {
+            const ent = entities.find(e => e.id === id);
+            if (!ent) return;
+            const roll = Math.floor(Math.random() * 20) + 1;
+            const passed = roll <= score && roll !== 20;
+            const badge = passed ? `<span class="text-emerald">SUCCESS!</span>` : `<span class="text-red">FAIL!</span>`;
+            logAction(`🎲 <b>${ent.name}</b> ${statName} Check: rolled <b>${roll}</b> (Needs &le; ${score}) &rarr; ${badge}`);
+        }
+
+        function rollSavingThrow(id, saveLabel, target) {
+            const ent = entities.find(e => e.id === id);
+            if (!ent) return;
+            const roll = Math.floor(Math.random() * 20) + 1;
+            const passed = roll >= target && roll !== 1;
+            const badge = passed ? `<span class="text-emerald">SAVED!</span>` : `<span class="text-red">FAILED!</span>`;
+            logAction(`🛡️ <b>${ent.name}</b> Save vs. ${saveLabel}: rolled <b>${roll}</b> (Needs &ge; ${target}) &rarr; ${badge}`);
+        }
+
+        function rollAttack(id) {
+            const ent = entities.find(e => e.id === id);
+            if (!ent) return;
+            const roll = Math.floor(Math.random() * 20) + 1;
+            const toHitMod = ent.toHitMod || 0;
+            const adjustedRoll = roll + toHitMod;
+            const acHit = ent.thac0 - adjustedRoll;
+
+            let rollDetails = `⚔️ <b>${ent.name}</b> rolls <b>${roll}</b>`;
+            if (toHitMod !== 0) rollDetails += ` (${toHitMod >= 0 ? '+' + toHitMod : toHitMod} = <b>${adjustedRoll}</b>)`;
+            rollDetails += ` vs THAC0 ${ent.thac0}`;
+
+            if (roll === 20) rollDetails += ` ✨ <span class="text-amber">CRIT!</span>`;
+            if (roll === 1) rollDetails += ` 💥 <span class="text-red">MISS!</span>`;
+            rollDetails += ` &rarr; Hits <b>AC ${acHit}</b> or worse!`;
+            logAction(rollDetails);
+        }
+
+        function rollDamage(id) {
+            const ent = entities.find(e => e.id === id);
+            if (!ent) return;
+            const diceStr = ent.weaponDice || "1d6";
+            const mod = ent.dmgMod || 0;
+            const parts = diceStr.toLowerCase().split('d');
+            const numDice = parseInt(parts[0], 10) || 1;
+            const dieSides = parseInt(parts[1], 10) || 6;
+
+            let totalRoll = 0;
+            let rolls = [];
+            for (let i = 0; i < numDice; i++) {
+                const r = Math.floor(Math.random() * dieSides) + 1;
+                rolls.push(r);
+                totalRoll += r;
+            }
+
+            const finalDmg = Math.max(1, totalRoll + mod);
+            const signMod = mod >= 0 ? `+${mod}` : `${mod}`;
+            logAction(`💥 <b>${ent.name}</b> deals <span class="text-red">${finalDmg} damage</span> (${diceStr} [${rolls.join(', ')}] ${signMod}).`);
+        }
+
+        function renderRoster() {
+            const container = document.getElementById("rosterContainer");
+            if (!container) return;
+            container.innerHTML = "";
+            document.getElementById("roundBadge").innerText = `Rd ${currentRound}`;
+
+            const clearBtn = document.getElementById("clearXpBtn");
+            if (gmMode && combatXpPool > 0) clearBtn.classList.remove("hidden");
+            else clearBtn.classList.add("hidden");
+
+            const filterVal = document.getElementById("groupFilter").value;
+            const groups = [
+                { key: 'pc', title: '🛡️ Player Characters (PCs)', color: '#fbbf24' },
+                { key: 'npc', title: '👤 Non-Player Characters (NPCs)', color: '#60a5fa' },
+                { key: 'enemy', title: '👹 Enemies & Monsters', color: '#f87171' }
+            ];
+
+            groups.forEach(g => {
+                if (filterVal !== 'all' && filterVal !== g.key) return;
+                const groupEntities = entities.filter(e => e.type === g.key);
+                if (groupEntities.length === 0 && filterVal === 'all') return;
+
+                const groupWrapper = document.createElement("div");
+
+                const header = document.createElement("div");
+                header.className = "group-header";
+                header.style.color = g.color;
+                header.innerHTML = `<span>${g.title} (${groupEntities.length})</span><span class="text-muted">d10 + Spd</span>`;
+                groupWrapper.appendChild(header);
+
+                groupEntities.forEach(ent => {
+                    const globalIdx = entities.findIndex(x => x.id === ent.id);
+                    const isTurn = globalIdx === activeTurnIndex;
+                    const isExpanded = expandedRows[ent.id];
+                    const isEnemy = ent.type === "enemy";
+                    const isDead = ent.hp <= 0;
+                    const hpPercent = Math.max(0, Math.min(100, (ent.hp / ent.maxHp) * 100));
+                    const hpColor = hpPercent > 50 ? '#059669' : hpPercent > 25 ? '#d97706' : '#dc2626';
+
+                    const card = document.createElement("div");
+                    card.className = `card ${isTurn ? 'card-turn' : ''} ${isEnemy ? 'card-enemy' : ''} ${isDead ? 'card-dead' : ''}`;
+
+                    const initScore = ent.initiative !== undefined ? ent.initiative : '-';
+                    const initBreakdown = ent.initRoll !== undefined ? `d10 (${ent.initRoll}) + Spd (${ent.weaponSpeed || 5})` : 'Not rolled';
+
+                    // Mask enemy stats when in Player View (GM Mode OFF)
+                    const showEnemyStats = gmMode || !isEnemy;
+                    const displayThac0 = showEnemyStats ? ent.thac0 : "??";
+                    const displayAc = showEnemyStats ? ent.ac : "??";
+
+                    // Enemy health description for players
+                    let enemyHealthDesc = "Healthy";
+                    if (hpPercent <= 0) enemyHealthDesc = "Dead 💀";
+                    else if (hpPercent < 25) enemyHealthDesc = "Near Death 🔴";
+                    else if (hpPercent < 50) enemyHealthDesc = "Wounded 🟡";
+                    else if (hpPercent < 75) enemyHealthDesc = "Injured 🟠";
+
+                    const displayHpValue = showEnemyStats ? `${ent.hp}/${ent.maxHp}` : enemyHealthDesc;
+
+                    let awardBtnText = "🎁 Award XP";
+                    const hasWisBonus = (ent.wis || 10) >= 18;
+                    if (ent.class2 && hasWisBonus) awardBtnText = "🎁 Award XP (Split + 10% WIS)";
+                    else if (ent.class2) awardBtnText = "🎁 Award XP (50/50 Split)";
+                    else if (hasWisBonus) awardBtnText = "🎁 Award XP (+10% WIS)";
+
+                    const nextXp1 = !isEnemy ? getNextLevelXp(ent.class1, ent.lvl1) : 0;
+                    const nextXp2 = (!isEnemy && ent.class2) ? getNextLevelXp(ent.class2, ent.lvl2 || ent.lvl1) : 0;
+                    const readyLvl1 = !isEnemy && (ent.xp1 || 0) >= nextXp1;
+                    const readyLvl2 = !isEnemy && ent.class2 && (ent.xp2 || 0) >= nextXp2;
+
+                    const statusBadgesHtml = (ent.statuses || []).map(s => `<span class="status-badge">${s}</span>`).join(" ");
+
+                    card.innerHTML = `
+                        <div class="row-between">
+                            <div class="row-center" style="cursor:pointer; flex:1; min-width:0;" onclick="toggleExpand('${ent.id}')">
+                                <span class="init-pill ${isTurn ? 'init-pill-active' : ''}" title="Total Initiative: ${initBreakdown}">#${initScore}</span>
+                                <div style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                                    <div style="font-weight:700; color:#fff; display:flex; align-items:center; gap:4px;">
+                                        ${isDead ? '💀 ' : ''}${ent.name} ${ent.tokenId ? '<span title="Synced to Owlbear Rodeo Map Token">🔗</span>' : ''}
+                                        ${statusBadgesHtml}
+                                    </div>
+                                    <div class="text-muted">${isEnemy ? `HD: ${ent.hd || '1'}` : `${ent.class1} ${ent.lvl1}${ent.class2 ? ' / ' + ent.class2 + ' ' + (ent.lvl2 || ent.lvl1) : ''}${ent.str === 18 && ent.exceptionalStr ? ' (18/' + ent.exceptionalStr + ')' : ''}`}</div>
+                                </div>
+                            </div>
+
+                            <div class="row-center">
+                                <div class="stat-pill" title="Weapon Speed / Cast Time">
+                                    <span class="stat-label">SPD</span>
+                                    <input type="number" value="${ent.weaponSpeed !== undefined ? ent.weaponSpeed : 5}" onchange="updateSpeed('${ent.id}', this.value)" class="input-spd">
+                                </div>
+                                <div class="stat-pill">
+                                    <span class="stat-label">THAC0</span>
+                                    <span class="text-amber">${displayThac0}</span>
+                                </div>
+                                <div class="stat-pill">
+                                    <span class="stat-label">AC</span>
+                                    <span class="text-blue">${displayAc}</span>
+                                </div>
+                                <div class="stat-pill" style="${!showEnemyStats ? 'min-width:75px;' : ''}">
+                                    <span class="stat-label">HP</span>
+                                    ${showEnemyStats ? `
+                                        <input type="text" value="${ent.hp}/${ent.maxHp}" onchange="updateHp('${ent.id}', this.value)" class="input-mini" title="Type -6 for damage, +4 for heal, or exact HP">
+                                    ` : `
+                                        <span style="font-weight:700; font-size:10px; color:${hpPercent < 50 ? '#f87171' : '#34d399'};">${displayHpValue}</span>
+                                    `}
+                                </div>
+                                <button onclick="rollAttack('${ent.id}')" title="Roll 1d20 Attack vs THAC0" class="btn-amber btn-icon">⚔️</button>
+                                <button onclick="rollDamage('${ent.id}')" title="Roll Weapon Damage (${ent.weaponDice || '1d6'})" class="btn-red btn-icon">💥</button>
+                                <button onclick="openEditModal('${ent.id}')" title="Edit Entity" class="btn-ghost">⚙️</button>
+                            </div>
+                        </div>
+
+                        <div class="hp-track">
+                            <div class="hp-fill" style="width:${hpPercent}%; background:${hpColor};"></div>
+                        </div>
+
+                        <div class="drawer ${isExpanded ? '' : 'hidden'}">
+                            ${!isEnemy ? `
+                                <div class="grid-6">
+                                    <button onclick="rollAbilityCheck('${ent.id}', 'STR', ${ent.str || 10})" class="roll-box"><span class="stat-label">STR ${ent.str === 18 && ent.exceptionalStr ? '/' + ent.exceptionalStr : ''}</span><span class="text-amber">${ent.str || 10}</span></button>
+                                    <button onclick="rollAbilityCheck('${ent.id}', 'DEX', ${ent.dex || 10})" class="roll-box"><span class="stat-label">DEX</span><span class="text-amber">${ent.dex || 10}</span></button>
+                                    <button onclick="rollAbilityCheck('${ent.id}', 'CON', ${ent.con || 10})" class="roll-box"><span class="stat-label">CON</span><span class="text-amber">${ent.con || 10}</span></button>
+                                    <button onclick="rollAbilityCheck('${ent.id}', 'INT', ${ent.int || 10})" class="roll-box"><span class="stat-label">INT</span><span class="text-amber">${ent.int || 10}</span></button>
+                                    <button onclick="rollAbilityCheck('${ent.id}', 'WIS', ${ent.wis || 10})" class="roll-box" title="${hasWisBonus ? '+10% XP Bonus Active' : 'Wisdom'}"><span class="stat-label">WIS ${hasWisBonus ? '⭐' : ''}</span><span class="text-amber">${ent.wis || 10}</span></button>
+                                    <button onclick="rollAbilityCheck('${ent.id}', 'CHA', ${ent.cha || 10})" class="roll-box"><span class="stat-label">CHA</span><span class="text-amber">${ent.cha || 10}</span></button>
+                                </div>
+
+                                <div class="grid-5">
+                                    <button onclick="rollSavingThrow('${ent.id}', 'Poison/Death', ${ent.saves?.ppd || 14})" class="roll-box"><span class="stat-label">PPD</span><span class="text-emerald">${ent.saves?.ppd || 14}</span></button>
+                                    <button onclick="rollSavingThrow('${ent.id}', 'Rod/Staff/Wand', ${ent.saves?.rsw || 16})" class="roll-box"><span class="stat-label">RSW</span><span class="text-emerald">${ent.saves?.rsw || 16}</span></button>
+                                    <button onclick="rollSavingThrow('${ent.id}', 'Petrify/Poly', ${ent.saves?.pp || 15})" class="roll-box"><span class="stat-label">PP</span><span class="text-emerald">${ent.saves?.pp || 15}</span></button>
+                                    <button onclick="rollSavingThrow('${ent.id}', 'Breath Weapon', ${ent.saves?.bw || 17})" class="roll-box"><span class="stat-label">BW</span><span class="text-emerald">${ent.saves?.bw || 17}</span></button>
+                                    <button onclick="rollSavingThrow('${ent.id}', 'Spell', ${ent.saves?.spl || 17})" class="roll-box"><span class="stat-label">SPL</span><span class="text-emerald">${ent.saves?.spl || 17}</span></button>
+                                </div>
+
+                                ${ent.type === 'pc' ? `
+                                    <div class="bar-box" style="display:flex; flex-direction:column; gap:6px;">
+                                        <div class="row-between" style="flex-wrap:wrap;">
+                                            <span class="row-center">
+                                                ${ent.class1} XP: <b class="text-amber">${ent.xp1 || 0}</b> <span class="text-muted">/ ${nextXp1}</span>
+                                                ${readyLvl1 ? `<button onclick="levelUpClass('${ent.id}', 1)" class="btn-emerald" title="Roll ${ent.class1} Hit Die, add CON bonus, and update THAC0 & Saves">⬆️ Level Up!</button>` : ''}
+                                            </span>
+                                            ${ent.class2 ? `
+                                                <span class="row-center">
+                                                    ${ent.class2} XP: <b class="text-amber">${ent.xp2 || 0}</b> <span class="text-muted">/ ${nextXp2}</span>
+                                                    ${readyLvl2 ? `<button onclick="levelUpClass('${ent.id}', 2)" class="btn-emerald" title="Roll ${ent.class2} Hit Die, add CON bonus, and update THAC0 & Saves">⬆️ Level Up!</button>` : ''}
+                                                </span>
+                                            ` : ''}
+                                        </div>
+                                        <div class="row-between">
+                                            <div class="row-center">
+                                                <input type="number" id="awardInput_${ent.id}" placeholder="Award XP..." style="width:90px;">
+                                                <button onclick="promptAwardXp('${ent.id}')" class="btn-amber" style="font-size:10px;">${awardBtnText}</button>
+                                            </div>
+                                            <button onclick="bindExistingEntityToMapToken('${ent.id}')" class="btn-emerald-outline" title="Select a token on the Owlbear Rodeo map and click to link">${ent.tokenId ? '🔗 Re-link Token' : '🔗 Link Token'}</button>
+                                        </div>
+                                    </div>
+                                ` : `
+                                    <div class="row-between">
+                                        <span class="text-muted">NPC Token Sync:</span>
+                                        <button onclick="bindExistingEntityToMapToken('${ent.id}')" class="btn-emerald-outline">${ent.tokenId ? '🔗 Re-link Map Token' : '🔗 Link Map Token'}</button>
+                                    </div>
+                                `}
+                            ` : `
+                                <div class="bar-box" style="display:flex; flex-direction:column; gap:6px;">
+                                    <div class="row-between">
+                                        <span class="text-muted">Monster XP: <b class="text-amber">${ent.monsterXp || 50} XP</b></span>
+                                        <button onclick="rollMorale('${ent.id}')" class="btn-indigo" style="font-size:10px;">🎲 Roll Morale (2d10 vs ${ent.morale || 12})</button>
+                                    </div>
+                                    <div class="row-between">
+                                        <button onclick="bindExistingEntityToMapToken('${ent.id}')" class="btn-emerald-outline" style="font-size:10px;">${ent.tokenId ? '🔗 Token Linked' : '🔗 Link Token'}</button>
+                                        <button onclick="defeatMonster('${ent.id}')" ${ent.defeated ? 'disabled' : ''} class="${ent.defeated ? 'btn-gm-off' : 'btn-red'}" style="font-size:10px;">
+                                            ${ent.defeated ? '✅ XP in Pool' : '💀 Defeat (To Pool)'}
+                                        </button>
+                                    </div>
+                                </div>
+                            `}
+                        </div>
+                    `;
+                    groupWrapper.appendChild(card);
+                });
+                container.appendChild(groupWrapper);
+            });
+
+            document.getElementById("xpPoolDisplay").innerText = combatXpPool + " XP";
+        }
+
+        function toggleExpand(id) {
+            expandedRows[id] = !expandedRows[id];
+            renderRoster();
+        }
+
+        function updateHp(id, valStr) {
+            const ent = entities.find(e => e.id === id);
+            if (!ent) return;
+
+            valStr = valStr.trim();
+            if (valStr.startsWith("+") || valStr.startsWith("-")) {
+                const delta = parseInt(valStr, 10);
+                ent.hp = Math.max(0, Math.min(ent.maxHp, ent.hp + delta));
+            } else if (valStr.includes("/")) {
+                const parts = valStr.split("/");
+                ent.hp = parseInt(parts[0], 10) || ent.hp;
+                ent.maxHp = parseInt(parts[1], 10) || ent.maxHp;
+            } else {
+                const exact = parseInt(valStr, 10);
+                if (!isNaN(exact)) ent.hp = Math.max(0, Math.min(ent.maxHp, exact));
+            }
+
+            if (ent.type === 'enemy') {
+                if (ent.hp === 0 && !ent.defeated) {
+                    ent.defeated = true;
+                    combatXpPool += (ent.monsterXp || 50);
+                    logAction(`💀 <b>${ent.name}</b> defeated! Added <b>${ent.monsterXp || 50} XP</b> to combat pool.`);
+                } else if (ent.hp > 0 && ent.defeated) {
+                    ent.defeated = false;
+                }
+            }
+            syncTokenOnMap(ent);
+            syncState();
+            renderRoster();
+        }
+
+        function promptAwardXp(id) {
+            const ent = entities.find(e => e.id === id);
+            if (!ent || ent.type !== 'pc') return;
+            const inputVal = parseInt(document.getElementById(`awardInput_${id}`).value, 10);
+            if (isNaN(inputVal) || inputVal <= 0) return;
+            applyXpToPc(ent, inputVal);
+            document.getElementById(`awardInput_${id}`).value = "";
+            syncState();
+            renderRoster();
+        }
+
+        function applyXpToPc(pc, rawXp) {
+            let finalXp = rawXp;
+            const wis = pc.wis || 10;
+            let wisBonusText = "";
+            if (wis >= 18) {
+                finalXp = Math.floor(rawXp * 1.10);
+                wisBonusText = ` (+10% WIS bonus)`;
+            }
+            if (pc.class2) {
+                const halfXp = Math.floor(finalXp / 2);
+                pc.xp1 = (pc.xp1 || 0) + halfXp;
+                pc.xp2 = (pc.xp2 || 0) + halfXp;
+                logAction(`🎁 Awarded <b>${rawXp} XP</b> to <b>${pc.name}</b>${wisBonusText} &rarr; +${halfXp} ${pc.class1} / +${halfXp} ${pc.class2}`);
+            } else {
+                pc.xp1 = (pc.xp1 || 0) + finalXp;
+                logAction(`🎁 Awarded <b>${rawXp} XP</b> to <b>${pc.name}</b>${wisBonusText} &rarr; +${finalXp} ${pc.class1}`);
+            }
+        }
+
+        function defeatMonster(id) {
+            const ent = entities.find(e => e.id === id);
+            if (!ent || ent.defeated) return;
+            ent.hp = 0;
+            ent.defeated = true;
+            combatXpPool += (ent.monsterXp || 50);
+            logAction(`💀 <b>${ent.name}</b> defeated! Added <b>${ent.monsterXp || 50} XP</b> to combat pool.`);
+            syncTokenOnMap(ent);
+            syncState();
+            renderRoster();
+        }
+
+        function distributeXpPool() {
+            if (!gmMode) return;
+            const pcs = entities.filter(e => e.type === 'pc');
+            if (pcs.length === 0 || combatXpPool <= 0) {
+                logAction("⚠️ Add at least one PC and defeat an enemy to distribute pool XP.");
+                return;
+            }
+            const totalPool = combatXpPool;
+            const sharePerPc = Math.floor(totalPool / pcs.length);
+            pcs.forEach(pc => applyXpToPc(pc, sharePerPc));
+            logAction(`✨ Distributed <b>${totalPool} XP</b> pool (${sharePerPc} base XP each) among ${pcs.length} PCs!`);
+            combatXpPool = 0;
+            syncState();
+            renderRoster();
+        }
+
+        function logAction(msg) {
+            document.getElementById("actionLogText").innerHTML = msg;
+        }
+
+        function openAddModal(type, presetName = "", tokenId = "") {
+            document.getElementById("editEntityId").value = "";
+            document.getElementById("modalTokenId").value = tokenId;
+            document.getElementById("modalTitle").innerText = type === 'pc' ? "Add Player Character" : type === 'npc' ? "Add NPC" : "Add Enemy / Monster";
+            document.getElementById("modalType").value = type;
+            document.getElementById("modalName").value = presetName || (type === 'pc' ? "New Hero" : type === 'npc' ? "Town Guard" : "Orc Raider");
+            document.getElementById("modalAc").value = type === 'enemy' ? "6" : "5";
+            document.getElementById("modalWeaponDice").value = type === 'enemy' ? "1d6" : "1d8";
+            document.getElementById("modalToHitMod").value = "0";
+            document.getElementById("modalDmgMod").value = type === 'enemy' ? "0" : "1";
+            document.getElementById("modalWeaponSpeed").value = "5";
+            document.getElementById("modalMonsterXp").value = "65";
+            document.getElementById("modalHd").value = "2";
+            document.getElementById("modalMorale").value = "12";
+            document.getElementById("modalClass1").value = "Fighter";
+            document.getElementById("modalClass2").value = "";
+            document.getElementById("modalLvl1").value = "1";
+            document.getElementById("modalLvl2").value = "1";
+            document.getElementById("modalStr").value = "15";
+            document.getElementById("modalExceptionalStr").value = "01";
+            document.getElementById("modalDex").value = "14";
+            document.getElementById("modalCon").value = "14";
+            document.getElementById("modalInt").value = "12";
+            document.getElementById("modalWis").value = "12";
+            document.getElementById("modalCha").value = "10";
+            document.getElementById("modalXp1").value = "0";
+            document.getElementById("modalXp2").value = "0";
+
+            document.querySelectorAll(".status-chk").forEach(chk => chk.checked = false);
+            document.getElementById("modalDeleteBtn").classList.add("hidden");
+            toggleEntityFields();
+            updateMultiClassFieldVisibility();
+            checkExceptionalStrengthVisibility();
+
+            if (type !== 'enemy') {
+                autoCalcAll2eStats(true);
+            } else {
+                document.getElementById("modalHp").value = "12";
+                document.getElementById("modalMaxHp").value = "12";
+                document.getElementById("modalThac0").value = "18";
+            }
+            document.getElementById("entityModal").classList.remove("hidden");
+        }
+
+        function openEditModal(id) {
+            const ent = entities.find(e => e.id === id);
+            if (!ent) return;
+            document.getElementById("editEntityId").value = ent.id;
+            document.getElementById("modalTokenId").value = ent.tokenId || "";
+            document.getElementById("modalTitle").innerText = "Edit " + ent.name;
+            document.getElementById("modalType").value = ent.type;
+            document.getElementById("modalName").value = ent.name;
+            document.getElementById("modalHp").value = ent.hp;
+            document.getElementById("modalMaxHp").value = ent.maxHp;
+            document.getElementById("modalThac0").value = ent.thac0;
+            document.getElementById("modalAc").value = ent.ac;
+            document.getElementById("modalWeaponDice").value = ent.weaponDice || "1d8";
+            document.getElementById("modalToHitMod").value = ent.toHitMod !== undefined ? ent.toHitMod : 0;
+            document.getElementById("modalDmgMod").value = ent.dmgMod !== undefined ? ent.dmgMod : 1;
+            document.getElementById("modalWeaponSpeed").value = ent.weaponSpeed !== undefined ? ent.weaponSpeed : 5;
+            
+            if (ent.type !== 'enemy') {
+                document.getElementById("modalClass1").value = ent.class1 || "Fighter";
+                document.getElementById("modalClass2").value = ent.class2 || "";
+                document.getElementById("modalLvl1").value = ent.lvl1 || 1;
+                document.getElementById("modalLvl2").value = ent.lvl2 || ent.lvl1 || 1;
+                document.getElementById("modalXp1").value = ent.xp1 || 0;
+                document.getElementById("modalXp2").value = ent.xp2 || 0;
+                document.getElementById("modalStr").value = ent.str || 10;
+                document.getElementById("modalExceptionalStr").value = ent.exceptionalStr || "01";
+                document.getElementById("modalDex").value = ent.dex || 10;
+                document.getElementById("modalCon").value = ent.con || 10;
+                document.getElementById("modalInt").value = ent.int || 10;
+                document.getElementById("modalWis").value = ent.wis || 10;
+                document.getElementById("modalCha").value = ent.cha || 10;
+                document.getElementById("modalSavePPD").value = ent.saves?.ppd ?? 14;
+                document.getElementById("modalSaveRSW").value = ent.saves?.rsw ?? 16;
+                document.getElementById("modalSavePP").value = ent.saves?.pp ?? 15;
+                document.getElementById("modalSaveBW").value = ent.saves?.bw ?? 17;
+                document.getElementById("modalSaveSPL").value = ent.saves?.spl ?? 17;
+            } else {
+                document.getElementById("modalMonsterXp").value = ent.monsterXp || 50;
+                document.getElementById("modalHd").value = ent.hd || "2";
+                document.getElementById("modalMorale").value = ent.morale || 12;
+            }
+
+            document.querySelectorAll(".status-chk").forEach(chk => {
+                chk.checked = (ent.statuses || []).includes(chk.value);
+            });
+
+            const delBtn = document.getElementById("modalDeleteBtn");
+            if (gmMode) delBtn.classList.remove("hidden");
+            else delBtn.classList.add("hidden");
+
+            toggleEntityFields();
+            updateMultiClassFieldVisibility();
+            checkExceptionalStrengthVisibility();
+            document.getElementById("entityModal").classList.remove("hidden");
+        }
+
+        function closeAddModal() {
+            document.getElementById("entityModal").classList.add("hidden");
+        }
+
+        function toggleEntityFields() {
+            const type = document.getElementById("modalType").value;
+            const autoBtn = document.getElementById("autoCalcBtn");
+            const thac0Label = document.getElementById("thac0Label");
+            if (type === 'enemy') {
+                document.getElementById("characterFields").classList.add("hidden");
+                document.getElementById("enemyFields").classList.remove("hidden");
+                autoBtn.classList.add("hidden");
+                thac0Label.innerText = "THAC0 (HD Calc)";
+            } else {
+                document.getElementById("characterFields").classList.remove("hidden");
+                document.getElementById("enemyFields").classList.add("hidden");
+                autoBtn.classList.remove("hidden");
+                thac0Label.innerText = "THAC0 (Auto)";
+            }
+        }
+
+        function saveEntity() {
+            const id = document.getElementById("editEntityId").value;
+            const tokenId = document.getElementById("modalTokenId").value;
+            const type = document.getElementById("modalType").value;
+            const name = document.getElementById("modalName").value || "Unknown";
+            const maxHp = Math.max(1, parseInt(document.getElementById("modalMaxHp").value, 10) || 10);
+            const hp = Math.max(0, Math.min(maxHp, parseInt(document.getElementById("modalHp").value, 10) ?? maxHp));
+            const thac0 = parseInt(document.getElementById("modalThac0").value, 10) || 20;
+            const ac = parseInt(document.getElementById("modalAc").value, 10) ?? 10;
+            const weaponDice = document.getElementById("modalWeaponDice").value.trim() || "1d6";
+            const toHitMod = parseInt(document.getElementById("modalToHit").value, 10) || 0;
+            const dmgMod = parseInt(document.getElementById("modalDmgMod").value, 10) || 0;
+            const weaponSpeed = parseInt(document.getElementById("modalWeaponSpeed").value, 10) || 5;
+
+            const selectedStatuses = [];
+            document.querySelectorAll(".status-chk").forEach(chk => {
+                if (chk.checked) selectedStatuses.push(chk.value);
+            });
+
+            const readSaves = () => ({
+                ppd: parseInt(document.getElementById("modalSavePPD").value, 10) || 14,
+                rsw: parseInt(document.getElementById("modalSaveRSW").value, 10) || 16,
+                pp: parseInt(document.getElementById("modalSavePP").value, 10) || 15,
+                bw: parseInt(document.getElementById("modalSaveBW").value, 10) || 17,
+                spl: parseInt(document.getElementById("modalSaveSPL").value, 10) || 17
+            });
+
+            let targetEnt = null;
+            if (id) {
+                const ent = entities.find(e => e.id === id);
+                if (ent) {
+                    Object.assign(ent, { name, type, hp, maxHp, thac0, ac, weaponDice, toHitMod, dmgMod, weaponSpeed, tokenId, statuses: selectedStatuses });
+                    if (type !== 'enemy') {
+                        ent.class1 = document.getElementById("modalClass1").value;
+                        ent.class2 = document.getElementById("modalClass2").value;
+                        ent.lvl1 = parseInt(document.getElementById("modalLvl1").value, 10) || 1;
+                        ent.lvl2 = ent.class2 ? (parseInt(document.getElementById("modalLvl2").value, 10) || 1) : 1;
+                        ent.xp1 = parseInt(document.getElementById("modalXp1").value, 10) || 0;
+                        ent.xp2 = ent.class2 ? (parseInt(document.getElementById("modalXp2").value, 10) || 0) : 0;
+                        ent.str = parseInt(document.getElementById("modalStr").value, 10) || 10;
+                        ent.exceptionalStr = document.getElementById("modalExceptionalStr").value;
+                        ent.dex = parseInt(document.getElementById("modalDex").value, 10) || 10;
+                        ent.con = parseInt(document.getElementById("modalCon").value, 10) || 10;
+                        ent.int = parseInt(document.getElementById("modalInt").value, 10) || 10;
+                        ent.wis = parseInt(document.getElementById("modalWis").value, 10) || 10;
+                        ent.cha = parseInt(document.getElementById("modalCha").value, 10) || 10;
+                        ent.saves = readSaves();
+                    } else {
+                        ent.monsterXp = parseInt(document.getElementById("modalMonsterXp").value, 10) || 50;
+                        ent.hd = document.getElementById("modalHd").value.trim() || "2";
+                        ent.morale = parseInt(document.getElementById("modalMorale").value, 10) || 12;
+                    }
+                    targetEnt = ent;
+                }
+            } else {
+                const newEnt = {
+                    id: "ent_" + Date.now(), tokenId,
+                    name, type, hp, maxHp, thac0, ac, weaponDice, toHitMod, dmgMod, weaponSpeed,
+                    initRoll: 5, initiative: 5 + weaponSpeed, defeated: hp === 0, statuses: selectedStatuses
+                };
+                if (type !== 'enemy') {
+                    newEnt.class1 = document.getElementById("modalClass1").value;
+                    newEnt.class2 = document.getElementById("modalClass2").value;
+                    newEnt.lvl1 = parseInt(document.getElementById("modalLvl1").value, 10) || 1;
+                    newEnt.lvl2 = newEnt.class2 ? (parseInt(document.getElementById("modalLvl2").value, 10) || 1) : 1;
+                    newEnt.xp1 = parseInt(document.getElementById("modalXp1").value, 10) || 0;
+                    newEnt.xp2 = newEnt.class2 ? (parseInt(document.getElementById("modalXp2").value, 10) || 0) : 0;
+                    newEnt.str = parseInt(document.getElementById("modalStr").value, 10) || 10;
+                    newEnt.exceptionalStr = document.getElementById("modalExceptionalStr").value;
+                    newEnt.dex = parseInt(document.getElementById("modalDex").value, 10) || 10;
+                    newEnt.con = parseInt(document.getElementById("modalCon").value, 10) || 10;
+                    newEnt.int = parseInt(document.getElementById("modalInt").value, 10) || 10;
+                    newEnt.wis = parseInt(document.getElementById("modalWis").value, 10) || 10;
+                    newEnt.cha = parseInt(document.getElementById("modalCha").value, 10) || 10;
+                    newEnt.saves = readSaves();
+                } else {
+                    newEnt.monsterXp = parseInt(document.getElementById("modalMonsterXp").value, 10) || 50;
+                    newEnt.hd = document.getElementById("modalHd").value.trim() || "2";
+                    newEnt.morale = parseInt(document.getElementById("modalMorale").value, 10) || 12;
+                }
+                entities.push(newEnt);
+                targetEnt = newEnt;
+            }
+            closeAddModal();
+            if (targetEnt && targetEnt.tokenId) syncTokenOnMap(targetEnt);
+            syncState();
+            renderRoster();
+        }
+
+        function deleteCurrentEntity() {
+            if (!gmMode) return;
+            const id = document.getElementById("editEntityId").value;
+            const index = entities.findIndex(e => e.id === id);
+            if (index !== -1) {
+                logAction(`🗑️ Removed <b>${entities[index].name}</b>.`);
+                entities.splice(index, 1);
+                if (activeTurnIndex >= entities.length) activeTurnIndex = 0;
+            }
+            closeAddModal();
+            syncState();
+            renderRoster();
+        }
+
+        function exportRosterJson() {
+            const blob = new Blob([JSON.stringify({ entities, combatXpPool, currentRound }, null, 2)], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "add2e-grimoire-backup.json";
+            a.click();
+        }
+
+        function importRosterJson(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (data.entities) {
+                        entities = data.entities;
+                        combatXpPool = data.combatXpPool || 0;
+                        currentRound = data.currentRound || 1;
+                        syncState();
+                        renderRoster();
+                        logAction("📂 Roster backup imported successfully!");
+                    }
+                } catch (err) {
+                    alert("Invalid JSON file.");
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        loadLocalState();
+        renderRoster();
+
+        (async function initObr() {
+            try {
+                const mod = await import("https://cdn.jsdelivr.net/npm/@owlbear-rodeo/sdk@3.1.0/+esm");
+                OBR_SDK = mod.default;
+                if (OBR_SDK && OBR_SDK.isAvailable) {
+                    OBR_SDK.onReady(async () => {
+                        isObrConnected = true;
+                        document.getElementById("obrStatusDot").classList.add("connected");
+                        document.getElementById("obrStatusText").innerText = "OBR Room Connected";
+
+                        const role = await OBR_SDK.player.getRole();
+                        setGmPermission(role === "GM");
+                        OBR_SDK.player.onChange((player) => setGmPermission(player.role === "GM"));
+
+                        const meta = await OBR_SDK.room.getMetadata();
+                        if (meta[META_KEY]) {
+                            entities = meta[META_KEY].entities || entities;
+                            combatXpPool = meta[META_KEY].combatXpPool || 0;
+                            currentRound = meta[META_KEY].currentRound || 1;
+                            activeTurnIndex = meta[META_KEY].activeTurnIndex || 0;
+                            renderRoster();
+                        } else {
+                            await syncState();
+                        }
+
+                        OBR_SDK.room.onMetadataChange((newMeta) => {
+                            if (newMeta[META_KEY]) {
+                                entities = newMeta[META_KEY].entities || entities;
+                                combatXpPool = newMeta[META_KEY].combatXpPool || 0;
+                                currentRound = newMeta[META_KEY].currentRound || 1;
+                                activeTurnIndex = newMeta[META_KEY].activeTurnIndex || 0;
+                                renderRoster();
+                            }
+                        });
+
+                        OBR_SDK.contextMenu.create({
+                            id: "com.add2e.grimoire/context-add",
+                            icons: [{
+                                icon: "https://www.owlbear.rodeo/favicon.ico",
+                                label: "Add / Link to 2e Grimoire",
+                                filter: { every: [{ key: "layer", value: "CHARACTER" }] }
+                            }],
+                            onClick(context) {
+                                const item = context.items[0];
+                                if (!item) return;
+                                const rawName = (item.text && item.text.plainText) || item.name || "Map Token";
+                                const cleanName = rawName.replace(/\s*\(\d+\/\d+\)$/, "").replace(/^💀\s*/, "");
+                                openAddModal('enemy', cleanName, item.id);
+                            }
+                        });
+                    });
+                }
+            } catch (err) {}
+        })();
+    </script>
+</body>
+</html>
