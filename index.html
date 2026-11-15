@@ -371,7 +371,7 @@
     <!-- MAIN SCRIPT -->
     <script>
         const META_KEY = "com.add2e.grimoire/state";
-        const STORAGE_KEY = "add2e_grimoire_state_v5";
+        const STORAGE_KEY = "add2e_grimoire_state_v7";
 
         const defaultEntities = [
             {
@@ -416,6 +416,12 @@
         let gmMode = true;
         let OBR_SDK = null;
         let isObrConnected = false;
+
+        // Safe DOM setter helper
+        function setVal(id, val) {
+            const el = document.getElementById(id);
+            if (el) el.value = val !== undefined && val !== null ? val : "";
+        }
 
         const XP_TABLES = {
             Fighter: [0, 2000, 4000, 8000, 16000, 32000, 64000, 125000, 250000, 500000],
@@ -523,10 +529,13 @@
         }
 
         function checkExceptionalStrengthVisibility() {
-            const strVal = parseInt(document.getElementById("modalStr").value, 10) || 10;
-            const class1 = document.getElementById("modalClass1").value;
-            const isWarrior = ["Fighter", "Paladin", "Ranger"].includes(class1);
+            const strInput = document.getElementById("modalStr");
+            const classInput = document.getElementById("modalClass1");
             const container = document.getElementById("excStrContainer");
+            if (!strInput || !classInput || !container) return;
+
+            const strVal = parseInt(strInput.value, 10) || 10;
+            const isWarrior = ["Fighter", "Paladin", "Ranger"].includes(classInput.value);
             if (strVal === 18 && isWarrior) {
                 container.classList.remove("hidden");
             } else {
@@ -535,11 +544,13 @@
         }
 
         function autoCalcMonsterThac0() {
-            const hdStr = document.getElementById("modalHd").value.trim();
-            const baseHd = parseInt(hdStr, 10) || 1;
-            // Standard AD&D 2e monster THAC0 approximation: 20 - HD (minimum 1)
+            const hdInput = document.getElementById("modalHd");
+            const thac0Input = document.getElementById("modalThac0");
+            if (!hdInput || !thac0Input) return;
+
+            const baseHd = parseInt(hdInput.value.trim(), 10) || 1;
             const autoThac0 = Math.max(1, 20 - baseHd);
-            document.getElementById("modalThac0").value = autoThac0;
+            thac0Input.value = autoThac0;
         }
 
         function rollMorale(id) {
@@ -662,20 +673,30 @@
         }
 
         function updateMultiClassFieldVisibility() {
-            const class1 = document.getElementById("modalClass1").value;
-            const class2 = document.getElementById("modalClass2").value;
+            const class1El = document.getElementById("modalClass1");
+            const class2El = document.getElementById("modalClass2");
             const multiRow = document.getElementById("multiClassRow");
+            if (!class1El || !class2El || !multiRow) return;
+
+            const class1 = class1El.value;
+            const class2 = class2El.value;
 
             if (class2) {
                 multiRow.classList.remove("hidden");
-                document.getElementById("lblLvl1").innerText = `${class1} Level`;
-                document.getElementById("lblXp1").innerText = `${class1} XP`;
-                document.getElementById("lblLvl2").innerText = `${class2} Level`;
-                document.getElementById("lblXp2").innerText = `${class2} XP`;
+                const lbl1 = document.getElementById("lblLvl1");
+                const xp1 = document.getElementById("lblXp1");
+                const lbl2 = document.getElementById("lblLvl2");
+                const xp2 = document.getElementById("lblXp2");
+                if (lbl1) lbl1.innerText = `${class1} Level`;
+                if (xp1) xp1.innerText = `${class1} XP`;
+                if (lbl2) lbl2.innerText = `${class2} Level`;
+                if (xp2) xp2.innerText = `${class2} XP`;
             } else {
                 multiRow.classList.add("hidden");
-                document.getElementById("lblLvl1").innerText = "Level";
-                document.getElementById("lblXp1").innerText = "Experience (XP)";
+                const lbl1 = document.getElementById("lblLvl1");
+                const xp1 = document.getElementById("lblXp1");
+                if (lbl1) lbl1.innerText = "Level";
+                if (xp1) xp1.innerText = "Experience (XP)";
             }
         }
 
@@ -686,20 +707,27 @@
         }
 
         function autoCalcAll2eStats(recalcHp) {
-            const type = document.getElementById("modalType").value;
-            if (type === "enemy") return;
+            const typeEl = document.getElementById("modalType");
+            if (!typeEl || typeEl.value === "enemy") return;
 
-            const class1 = document.getElementById("modalClass1").value;
-            const class2 = document.getElementById("modalClass2").value;
-            const lvl1 = parseInt(document.getElementById("modalLvl1").value, 10) || 1;
-            const lvl2 = parseInt(document.getElementById("modalLvl2").value, 10) || 1;
-            const con = parseInt(document.getElementById("modalCon").value, 10) || 10;
+            const class1El = document.getElementById("modalClass1");
+            const class2El = document.getElementById("modalClass2");
+            const lvl1El = document.getElementById("modalLvl1");
+            const lvl2El = document.getElementById("modalLvl2");
+            const conEl = document.getElementById("modalCon");
+            if (!class1El || !lvl1El || !conEl) return;
+
+            const class1 = class1El.value;
+            const class2 = class2El ? class2El.value : "";
+            const lvl1 = parseInt(lvl1El.value, 10) || 1;
+            const lvl2 = lvl2El ? (parseInt(lvl2El.value, 10) || 1) : 1;
+            const con = parseInt(conEl.value, 10) || 10;
 
             let bestThac0 = calcClassThac0(class1, lvl1);
             if (class2) {
                 bestThac0 = Math.min(bestThac0, calcClassThac0(class2, lvl2));
             }
-            document.getElementById("modalThac0").value = bestThac0;
+            setVal("modalThac0", bestThac0);
 
             const saves1 = calcClassSaves(class1, lvl1);
             let finalSaves = { ...saves1 };
@@ -713,11 +741,11 @@
                     spl: Math.min(saves1.spl, saves2.spl)
                 };
             }
-            document.getElementById("modalSavePPD").value = finalSaves.ppd;
-            document.getElementById("modalSaveRSW").value = finalSaves.rsw;
-            document.getElementById("modalSavePP").value = finalSaves.pp;
-            document.getElementById("modalSaveBW").value = finalSaves.bw;
-            document.getElementById("modalSaveSPL").value = finalSaves.spl;
+            setVal("modalSavePPD", finalSaves.ppd);
+            setVal("modalSaveRSW", finalSaves.rsw);
+            setVal("modalSavePP", finalSaves.pp);
+            setVal("modalSaveBW", finalSaves.bw);
+            setVal("modalSaveSPL", finalSaves.spl);
 
             if (recalcHp) {
                 function getHdAvg(c) {
@@ -738,8 +766,8 @@
                 } else {
                     calcHp = Math.max(lvl1 * 2, Math.round(lvl1 * (getHdAvg(class1) + conMod)));
                 }
-                document.getElementById("modalMaxHp").value = calcHp;
-                document.getElementById("modalHp").value = calcHp;
+                setVal("modalMaxHp", calcHp);
+                setVal("modalHp", calcHp);
             }
         }
 
@@ -778,13 +806,13 @@
             const txt = document.getElementById("gmModeText");
             const distBtn = document.getElementById("distributeXpBtn");
             if (gmMode) {
-                btn.className = "btn-gm-on";
-                txt.innerText = "GM Mode: ON";
-                distBtn.classList.remove("hidden");
+                if (btn) btn.className = "btn-gm-on";
+                if (txt) txt.innerText = "GM Mode: ON";
+                if (distBtn) distBtn.classList.remove("hidden");
             } else {
-                btn.className = "btn-gm-off";
-                txt.innerText = "Player View";
-                distBtn.classList.add("hidden");
+                if (btn) btn.className = "btn-gm-off";
+                if (txt) txt.innerText = "Player View";
+                if (distBtn) distBtn.classList.add("hidden");
             }
             renderRoster();
         }
@@ -938,13 +966,18 @@
             const container = document.getElementById("rosterContainer");
             if (!container) return;
             container.innerHTML = "";
-            document.getElementById("roundBadge").innerText = `Rd ${currentRound}`;
+            const roundBadge = document.getElementById("roundBadge");
+            if (roundBadge) roundBadge.innerText = `Rd ${currentRound}`;
 
             const clearBtn = document.getElementById("clearXpBtn");
-            if (gmMode && combatXpPool > 0) clearBtn.classList.remove("hidden");
-            else clearBtn.classList.add("hidden");
+            if (clearBtn) {
+                if (gmMode && combatXpPool > 0) clearBtn.classList.remove("hidden");
+                else clearBtn.classList.add("hidden");
+            }
 
-            const filterVal = document.getElementById("groupFilter").value;
+            const filterEl = document.getElementById("groupFilter");
+            const filterVal = filterEl ? filterEl.value : "all";
+
             const groups = [
                 { key: 'pc', title: '🛡️ Player Characters (PCs)', color: '#fbbf24' },
                 { key: 'npc', title: '👤 Non-Player Characters (NPCs)', color: '#60a5fa' },
@@ -979,12 +1012,10 @@
                     const initScore = ent.initiative !== undefined ? ent.initiative : '-';
                     const initBreakdown = ent.initRoll !== undefined ? `d10 (${ent.initRoll}) + Spd (${ent.weaponSpeed || 5})` : 'Not rolled';
 
-                    // Mask enemy stats when in Player View (GM Mode OFF)
                     const showEnemyStats = gmMode || !isEnemy;
                     const displayThac0 = showEnemyStats ? ent.thac0 : "??";
                     const displayAc = showEnemyStats ? ent.ac : "??";
 
-                    // Enemy health description for players
                     let enemyHealthDesc = "Healthy";
                     if (hpPercent <= 0) enemyHealthDesc = "Dead 💀";
                     else if (hpPercent < 25) enemyHealthDesc = "Near Death 🔴";
@@ -1118,7 +1149,8 @@
                 container.appendChild(groupWrapper);
             });
 
-            document.getElementById("xpPoolDisplay").innerText = combatXpPool + " XP";
+            const xpPoolDisplay = document.getElementById("xpPoolDisplay");
+            if (xpPoolDisplay) xpPoolDisplay.innerText = combatXpPool + " XP";
         }
 
         function toggleExpand(id) {
@@ -1160,10 +1192,12 @@
         function promptAwardXp(id) {
             const ent = entities.find(e => e.id === id);
             if (!ent || ent.type !== 'pc') return;
-            const inputVal = parseInt(document.getElementById(`awardInput_${id}`).value, 10);
+            const inputEl = document.getElementById(`awardInput_${id}`);
+            if (!inputEl) return;
+            const inputVal = parseInt(inputEl.value, 10);
             if (isNaN(inputVal) || inputVal <= 0) return;
             applyXpToPc(ent, inputVal);
-            document.getElementById(`awardInput_${id}`).value = "";
+            inputEl.value = "";
             syncState();
             renderRoster();
         }
@@ -1216,39 +1250,42 @@
         }
 
         function logAction(msg) {
-            document.getElementById("actionLogText").innerHTML = msg;
+            const logEl = document.getElementById("actionLogText");
+            if (logEl) logEl.innerHTML = msg;
         }
 
         function openAddModal(type, presetName = "", tokenId = "") {
-            document.getElementById("editEntityId").value = "";
-            document.getElementById("modalTokenId").value = tokenId;
-            document.getElementById("modalTitle").innerText = type === 'pc' ? "Add Player Character" : type === 'npc' ? "Add NPC" : "Add Enemy / Monster";
-            document.getElementById("modalType").value = type;
-            document.getElementById("modalName").value = presetName || (type === 'pc' ? "New Hero" : type === 'npc' ? "Town Guard" : "Orc Raider");
-            document.getElementById("modalAc").value = type === 'enemy' ? "6" : "5";
-            document.getElementById("modalWeaponDice").value = type === 'enemy' ? "1d6" : "1d8";
-            document.getElementById("modalToHitMod").value = "0";
-            document.getElementById("modalDmgMod").value = type === 'enemy' ? "0" : "1";
-            document.getElementById("modalWeaponSpeed").value = "5";
-            document.getElementById("modalMonsterXp").value = "65";
-            document.getElementById("modalHd").value = "2";
-            document.getElementById("modalMorale").value = "12";
-            document.getElementById("modalClass1").value = "Fighter";
-            document.getElementById("modalClass2").value = "";
-            document.getElementById("modalLvl1").value = "1";
-            document.getElementById("modalLvl2").value = "1";
-            document.getElementById("modalStr").value = "15";
-            document.getElementById("modalExceptionalStr").value = "01";
-            document.getElementById("modalDex").value = "14";
-            document.getElementById("modalCon").value = "14";
-            document.getElementById("modalInt").value = "12";
-            document.getElementById("modalWis").value = "12";
-            document.getElementById("modalCha").value = "10";
-            document.getElementById("modalXp1").value = "0";
-            document.getElementById("modalXp2").value = "0";
+            setVal("editEntityId", "");
+            setVal("modalTokenId", tokenId);
+            const titleEl = document.getElementById("modalTitle");
+            if (titleEl) titleEl.innerText = type === 'pc' ? "Add Player Character" : type === 'npc' ? "Add NPC" : "Add Enemy / Monster";
+            setVal("modalType", type);
+            setVal("modalName", presetName || (type === 'pc' ? "New Hero" : type === 'npc' ? "Town Guard" : "Orc Raider"));
+            setVal("modalAc", type === 'enemy' ? "6" : "5");
+            setVal("modalWeaponDice", type === 'enemy' ? "1d6" : "1d8");
+            setVal("modalToHit", "0");
+            setVal("modalDmgMod", type === 'enemy' ? "0" : "1");
+            setVal("modalWeaponSpeed", "5");
+            setVal("modalMonsterXp", "65");
+            setVal("modalHd", "2");
+            setVal("modalMorale", "12");
+            setVal("modalClass1", "Fighter");
+            setVal("modalClass2", "");
+            setVal("modalLvl1", "1");
+            setVal("modalLvl2", "1");
+            setVal("modalStr", "15");
+            setVal("modalExceptionalStr", "01");
+            setVal("modalDex", "14");
+            setVal("modalCon", "14");
+            setVal("modalInt", "12");
+            setVal("modalWis", "12");
+            setVal("modalCha", "10");
+            setVal("modalXp1", "0");
+            setVal("modalXp2", "0");
 
             document.querySelectorAll(".status-chk").forEach(chk => chk.checked = false);
-            document.getElementById("modalDeleteBtn").classList.add("hidden");
+            const delBtn = document.getElementById("modalDeleteBtn");
+            if (delBtn) delBtn.classList.add("hidden");
             toggleEntityFields();
             updateMultiClassFieldVisibility();
             checkExceptionalStrengthVisibility();
@@ -1256,53 +1293,55 @@
             if (type !== 'enemy') {
                 autoCalcAll2eStats(true);
             } else {
-                document.getElementById("modalHp").value = "12";
-                document.getElementById("modalMaxHp").value = "12";
-                document.getElementById("modalThac0").value = "18";
+                setVal("modalHp", "12");
+                setVal("modalMaxHp", "12");
+                setVal("modalThac0", "18");
             }
-            document.getElementById("entityModal").classList.remove("hidden");
+            const modal = document.getElementById("entityModal");
+            if (modal) modal.classList.remove("hidden");
         }
 
         function openEditModal(id) {
             const ent = entities.find(e => e.id === id);
             if (!ent) return;
-            document.getElementById("editEntityId").value = ent.id;
-            document.getElementById("modalTokenId").value = ent.tokenId || "";
-            document.getElementById("modalTitle").innerText = "Edit " + ent.name;
-            document.getElementById("modalType").value = ent.type;
-            document.getElementById("modalName").value = ent.name;
-            document.getElementById("modalHp").value = ent.hp;
-            document.getElementById("modalMaxHp").value = ent.maxHp;
-            document.getElementById("modalThac0").value = ent.thac0;
-            document.getElementById("modalAc").value = ent.ac;
-            document.getElementById("modalWeaponDice").value = ent.weaponDice || "1d8";
-            document.getElementById("modalToHitMod").value = ent.toHitMod !== undefined ? ent.toHitMod : 0;
-            document.getElementById("modalDmgMod").value = ent.dmgMod !== undefined ? ent.dmgMod : 1;
-            document.getElementById("modalWeaponSpeed").value = ent.weaponSpeed !== undefined ? ent.weaponSpeed : 5;
+            setVal("editEntityId", ent.id);
+            setVal("modalTokenId", ent.tokenId || "");
+            const titleEl = document.getElementById("modalTitle");
+            if (titleEl) titleEl.innerText = "Edit " + ent.name;
+            setVal("modalType", ent.type);
+            setVal("modalName", ent.name);
+            setVal("modalHp", ent.hp);
+            setVal("modalMaxHp", ent.maxHp);
+            setVal("modalThac0", ent.thac0);
+            setVal("modalAc", ent.ac);
+            setVal("modalWeaponDice", ent.weaponDice || "1d8");
+            setVal("modalToHit", ent.toHitMod !== undefined ? ent.toHitMod : 0);
+            setVal("modalDmgMod", ent.dmgMod !== undefined ? ent.dmgMod : 1);
+            setVal("modalWeaponSpeed", ent.weaponSpeed !== undefined ? ent.weaponSpeed : 5);
             
             if (ent.type !== 'enemy') {
-                document.getElementById("modalClass1").value = ent.class1 || "Fighter";
-                document.getElementById("modalClass2").value = ent.class2 || "";
-                document.getElementById("modalLvl1").value = ent.lvl1 || 1;
-                document.getElementById("modalLvl2").value = ent.lvl2 || ent.lvl1 || 1;
-                document.getElementById("modalXp1").value = ent.xp1 || 0;
-                document.getElementById("modalXp2").value = ent.xp2 || 0;
-                document.getElementById("modalStr").value = ent.str || 10;
-                document.getElementById("modalExceptionalStr").value = ent.exceptionalStr || "01";
-                document.getElementById("modalDex").value = ent.dex || 10;
-                document.getElementById("modalCon").value = ent.con || 10;
-                document.getElementById("modalInt").value = ent.int || 10;
-                document.getElementById("modalWis").value = ent.wis || 10;
-                document.getElementById("modalCha").value = ent.cha || 10;
-                document.getElementById("modalSavePPD").value = ent.saves?.ppd ?? 14;
-                document.getElementById("modalSaveRSW").value = ent.saves?.rsw ?? 16;
-                document.getElementById("modalSavePP").value = ent.saves?.pp ?? 15;
-                document.getElementById("modalSaveBW").value = ent.saves?.bw ?? 17;
-                document.getElementById("modalSaveSPL").value = ent.saves?.spl ?? 17;
+                setVal("modalClass1", ent.class1 || "Fighter");
+                setVal("modalClass2", ent.class2 || "");
+                setVal("modalLvl1", ent.lvl1 || 1);
+                setVal("modalLvl2", ent.lvl2 || ent.lvl1 || 1);
+                setVal("modalXp1", ent.xp1 || 0);
+                setVal("modalXp2", ent.xp2 || 0);
+                setVal("modalStr", ent.str || 10);
+                setVal("modalExceptionalStr", ent.exceptionalStr || "01");
+                setVal("modalDex", ent.dex || 10);
+                setVal("modalCon", ent.con || 10);
+                setVal("modalInt", ent.int || 10);
+                setVal("modalWis", ent.wis || 10);
+                setVal("modalCha", ent.cha || 10);
+                setVal("modalSavePPD", ent.saves?.ppd ?? 14);
+                setVal("modalSaveRSW", ent.saves?.rsw ?? 16);
+                setVal("modalSavePP", ent.saves?.pp ?? 15);
+                setVal("modalSaveBW", ent.saves?.bw ?? 17);
+                setVal("modalSaveSPL", ent.saves?.spl ?? 17);
             } else {
-                document.getElementById("modalMonsterXp").value = ent.monsterXp || 50;
-                document.getElementById("modalHd").value = ent.hd || "2";
-                document.getElementById("modalMorale").value = ent.morale || 12;
+                setVal("modalMonsterXp", ent.monsterXp || 50);
+                setVal("modalHd", ent.hd || "2");
+                setVal("modalMorale", ent.morale || 12);
             }
 
             document.querySelectorAll(".status-chk").forEach(chk => {
@@ -1310,49 +1349,71 @@
             });
 
             const delBtn = document.getElementById("modalDeleteBtn");
-            if (gmMode) delBtn.classList.remove("hidden");
-            else delBtn.classList.add("hidden");
+            if (delBtn) {
+                if (gmMode) delBtn.classList.remove("hidden");
+                else delBtn.classList.add("hidden");
+            }
 
             toggleEntityFields();
             updateMultiClassFieldVisibility();
             checkExceptionalStrengthVisibility();
-            document.getElementById("entityModal").classList.remove("hidden");
+            const modal = document.getElementById("entityModal");
+            if (modal) modal.classList.remove("hidden");
         }
 
         function closeAddModal() {
-            document.getElementById("entityModal").classList.add("hidden");
+            const modal = document.getElementById("entityModal");
+            if (modal) modal.classList.add("hidden");
         }
 
         function toggleEntityFields() {
-            const type = document.getElementById("modalType").value;
+            const typeEl = document.getElementById("modalType");
+            if (!typeEl) return;
+            const type = typeEl.value;
             const autoBtn = document.getElementById("autoCalcBtn");
             const thac0Label = document.getElementById("thac0Label");
+            const charFields = document.getElementById("characterFields");
+            const enemyFields = document.getElementById("enemyFields");
+
             if (type === 'enemy') {
-                document.getElementById("characterFields").classList.add("hidden");
-                document.getElementById("enemyFields").classList.remove("hidden");
-                autoBtn.classList.add("hidden");
-                thac0Label.innerText = "THAC0 (HD Calc)";
+                if (charFields) charFields.classList.add("hidden");
+                if (enemyFields) enemyFields.classList.remove("hidden");
+                if (autoBtn) autoBtn.classList.add("hidden");
+                if (thac0Label) thac0Label.innerText = "THAC0 (HD Calc)";
             } else {
-                document.getElementById("characterFields").classList.remove("hidden");
-                document.getElementById("enemyFields").classList.add("hidden");
-                autoBtn.classList.remove("hidden");
-                thac0Label.innerText = "THAC0 (Auto)";
+                if (charFields) charFields.classList.remove("hidden");
+                if (enemyFields) enemyFields.classList.add("hidden");
+                if (autoBtn) autoBtn.classList.remove("hidden");
+                if (thac0Label) thac0Label.innerText = "THAC0 (Auto)";
             }
         }
 
         function saveEntity() {
-            const id = document.getElementById("editEntityId").value;
-            const tokenId = document.getElementById("modalTokenId").value;
-            const type = document.getElementById("modalType").value;
-            const name = document.getElementById("modalName").value || "Unknown";
-            const maxHp = Math.max(1, parseInt(document.getElementById("modalMaxHp").value, 10) || 10);
-            const hp = Math.max(0, Math.min(maxHp, parseInt(document.getElementById("modalHp").value, 10) ?? maxHp));
-            const thac0 = parseInt(document.getElementById("modalThac0").value, 10) || 20;
-            const ac = parseInt(document.getElementById("modalAc").value, 10) ?? 10;
-            const weaponDice = document.getElementById("modalWeaponDice").value.trim() || "1d6";
-            const toHitMod = parseInt(document.getElementById("modalToHit").value, 10) || 0;
-            const dmgMod = parseInt(document.getElementById("modalDmgMod").value, 10) || 0;
-            const weaponSpeed = parseInt(document.getElementById("modalWeaponSpeed").value, 10) || 5;
+            const editIdEl = document.getElementById("editEntityId");
+            const tokenIdEl = document.getElementById("modalTokenId");
+            const typeEl = document.getElementById("modalType");
+            const nameEl = document.getElementById("modalName");
+            const maxHpEl = document.getElementById("modalMaxHp");
+            const hpEl = document.getElementById("modalHp");
+            const thac0El = document.getElementById("modalThac0");
+            const acEl = document.getElementById("modalAc");
+            const weaponDiceEl = document.getElementById("modalWeaponDice");
+            const toHitEl = document.getElementById("modalToHit");
+            const dmgModEl = document.getElementById("modalDmgMod");
+            const weaponSpeedEl = document.getElementById("modalWeaponSpeed");
+
+            const id = editIdEl ? editIdEl.value : "";
+            const tokenId = tokenIdEl ? tokenIdEl.value : "";
+            const type = typeEl ? typeEl.value : "pc";
+            const name = nameEl && nameEl.value ? nameEl.value : "Unknown";
+            const maxHp = Math.max(1, parseInt(maxHpEl ? maxHpEl.value : "10", 10) || 10);
+            const hp = Math.max(0, Math.min(maxHp, parseInt(hpEl ? hpEl.value : maxHp, 10) ?? maxHp));
+            const thac0 = parseInt(thac0El ? thac0El.value : "20", 10) || 20;
+            const ac = parseInt(acEl ? acEl.value : "10", 10) ?? 10;
+            const weaponDice = weaponDiceEl && weaponDiceEl.value ? weaponDiceEl.value.trim() : "1d6";
+            const toHitMod = parseInt(toHitEl ? toHitEl.value : "0", 10) || 0;
+            const dmgMod = parseInt(dmgModEl ? dmgModEl.value : "0", 10) || 0;
+            const weaponSpeed = parseInt(weaponSpeedEl ? weaponSpeedEl.value : "5", 10) || 5;
 
             const selectedStatuses = [];
             document.querySelectorAll(".status-chk").forEach(chk => {
@@ -1360,11 +1421,11 @@
             });
 
             const readSaves = () => ({
-                ppd: parseInt(document.getElementById("modalSavePPD").value, 10) || 14,
-                rsw: parseInt(document.getElementById("modalSaveRSW").value, 10) || 16,
-                pp: parseInt(document.getElementById("modalSavePP").value, 10) || 15,
-                bw: parseInt(document.getElementById("modalSaveBW").value, 10) || 17,
-                spl: parseInt(document.getElementById("modalSaveSPL").value, 10) || 17
+                ppd: parseInt(document.getElementById("modalSavePPD")?.value || "14", 10),
+                rsw: parseInt(document.getElementById("modalSaveRSW")?.value || "16", 10),
+                pp: parseInt(document.getElementById("modalSavePP")?.value || "15", 10),
+                bw: parseInt(document.getElementById("modalSaveBW")?.value || "17", 10),
+                spl: parseInt(document.getElementById("modalSaveSPL")?.value || "17", 10)
             });
 
             let targetEnt = null;
@@ -1373,24 +1434,24 @@
                 if (ent) {
                     Object.assign(ent, { name, type, hp, maxHp, thac0, ac, weaponDice, toHitMod, dmgMod, weaponSpeed, tokenId, statuses: selectedStatuses });
                     if (type !== 'enemy') {
-                        ent.class1 = document.getElementById("modalClass1").value;
-                        ent.class2 = document.getElementById("modalClass2").value;
-                        ent.lvl1 = parseInt(document.getElementById("modalLvl1").value, 10) || 1;
-                        ent.lvl2 = ent.class2 ? (parseInt(document.getElementById("modalLvl2").value, 10) || 1) : 1;
-                        ent.xp1 = parseInt(document.getElementById("modalXp1").value, 10) || 0;
-                        ent.xp2 = ent.class2 ? (parseInt(document.getElementById("modalXp2").value, 10) || 0) : 0;
-                        ent.str = parseInt(document.getElementById("modalStr").value, 10) || 10;
-                        ent.exceptionalStr = document.getElementById("modalExceptionalStr").value;
-                        ent.dex = parseInt(document.getElementById("modalDex").value, 10) || 10;
-                        ent.con = parseInt(document.getElementById("modalCon").value, 10) || 10;
-                        ent.int = parseInt(document.getElementById("modalInt").value, 10) || 10;
-                        ent.wis = parseInt(document.getElementById("modalWis").value, 10) || 10;
-                        ent.cha = parseInt(document.getElementById("modalCha").value, 10) || 10;
+                        ent.class1 = document.getElementById("modalClass1")?.value || "Fighter";
+                        ent.class2 = document.getElementById("modalClass2")?.value || "";
+                        ent.lvl1 = parseInt(document.getElementById("modalLvl1")?.value || "1", 10);
+                        ent.lvl2 = ent.class2 ? (parseInt(document.getElementById("modalLvl2")?.value || "1", 10)) : 1;
+                        ent.xp1 = parseInt(document.getElementById("modalXp1")?.value || "0", 10);
+                        ent.xp2 = ent.class2 ? (parseInt(document.getElementById("modalXp2")?.value || "0", 10)) : 0;
+                        ent.str = parseInt(document.getElementById("modalStr")?.value || "10", 10);
+                        ent.exceptionalStr = document.getElementById("modalExceptionalStr")?.value || "01";
+                        ent.dex = parseInt(document.getElementById("modalDex")?.value || "10", 10);
+                        ent.con = parseInt(document.getElementById("modalCon")?.value || "10", 10);
+                        ent.int = parseInt(document.getElementById("modalInt")?.value || "10", 10);
+                        ent.wis = parseInt(document.getElementById("modalWis")?.value || "10", 10);
+                        ent.cha = parseInt(document.getElementById("modalCha")?.value || "10", 10);
                         ent.saves = readSaves();
                     } else {
-                        ent.monsterXp = parseInt(document.getElementById("modalMonsterXp").value, 10) || 50;
-                        ent.hd = document.getElementById("modalHd").value.trim() || "2";
-                        ent.morale = parseInt(document.getElementById("modalMorale").value, 10) || 12;
+                        ent.monsterXp = parseInt(document.getElementById("modalMonsterXp")?.value || "50", 10);
+                        ent.hd = document.getElementById("modalHd")?.value?.trim() || "2";
+                        ent.morale = parseInt(document.getElementById("modalMorale")?.value || "12", 10);
                     }
                     targetEnt = ent;
                 }
@@ -1401,24 +1462,24 @@
                     initRoll: 5, initiative: 5 + weaponSpeed, defeated: hp === 0, statuses: selectedStatuses
                 };
                 if (type !== 'enemy') {
-                    newEnt.class1 = document.getElementById("modalClass1").value;
-                    newEnt.class2 = document.getElementById("modalClass2").value;
-                    newEnt.lvl1 = parseInt(document.getElementById("modalLvl1").value, 10) || 1;
-                    newEnt.lvl2 = newEnt.class2 ? (parseInt(document.getElementById("modalLvl2").value, 10) || 1) : 1;
-                    newEnt.xp1 = parseInt(document.getElementById("modalXp1").value, 10) || 0;
-                    newEnt.xp2 = newEnt.class2 ? (parseInt(document.getElementById("modalXp2").value, 10) || 0) : 0;
-                    newEnt.str = parseInt(document.getElementById("modalStr").value, 10) || 10;
-                    newEnt.exceptionalStr = document.getElementById("modalExceptionalStr").value;
-                    newEnt.dex = parseInt(document.getElementById("modalDex").value, 10) || 10;
-                    newEnt.con = parseInt(document.getElementById("modalCon").value, 10) || 10;
-                    newEnt.int = parseInt(document.getElementById("modalInt").value, 10) || 10;
-                    newEnt.wis = parseInt(document.getElementById("modalWis").value, 10) || 10;
-                    newEnt.cha = parseInt(document.getElementById("modalCha").value, 10) || 10;
+                    newEnt.class1 = document.getElementById("modalClass1")?.value || "Fighter";
+                    newEnt.class2 = document.getElementById("modalClass2")?.value || "";
+                    newEnt.lvl1 = parseInt(document.getElementById("modalLvl1")?.value || "1", 10);
+                    newEnt.lvl2 = newEnt.class2 ? (parseInt(document.getElementById("modalLvl2")?.value || "1", 10)) : 1;
+                    newEnt.xp1 = parseInt(document.getElementById("modalXp1")?.value || "0", 10);
+                    newEnt.xp2 = newEnt.class2 ? (parseInt(document.getElementById("modalXp2")?.value || "0", 10)) : 0;
+                    newEnt.str = parseInt(document.getElementById("modalStr")?.value || "10", 10);
+                    newEnt.exceptionalStr = document.getElementById("modalExceptionalStr")?.value || "01";
+                    newEnt.dex = parseInt(document.getElementById("modalDex")?.value || "10", 10);
+                    newEnt.con = parseInt(document.getElementById("modalCon")?.value || "10", 10);
+                    newEnt.int = parseInt(document.getElementById("modalInt")?.value || "10", 10);
+                    newEnt.wis = parseInt(document.getElementById("modalWis")?.value || "10", 10);
+                    newEnt.cha = parseInt(document.getElementById("modalCha")?.value || "10", 10);
                     newEnt.saves = readSaves();
                 } else {
-                    newEnt.monsterXp = parseInt(document.getElementById("modalMonsterXp").value, 10) || 50;
-                    newEnt.hd = document.getElementById("modalHd").value.trim() || "2";
-                    newEnt.morale = parseInt(document.getElementById("modalMorale").value, 10) || 12;
+                    newEnt.monsterXp = parseInt(document.getElementById("modalMonsterXp")?.value || "50", 10);
+                    newEnt.hd = document.getElementById("modalHd")?.value?.trim() || "2";
+                    newEnt.morale = parseInt(document.getElementById("modalMorale")?.value || "12", 10);
                 }
                 entities.push(newEnt);
                 targetEnt = newEnt;
@@ -1431,7 +1492,9 @@
 
         function deleteCurrentEntity() {
             if (!gmMode) return;
-            const id = document.getElementById("editEntityId").value;
+            const editIdEl = document.getElementById("editEntityId");
+            if (!editIdEl) return;
+            const id = editIdEl.value;
             const index = entities.findIndex(e => e.id === id);
             if (index !== -1) {
                 logAction(`🗑️ Removed <b>${entities[index].name}</b>.`);
@@ -1484,8 +1547,10 @@
                 if (OBR_SDK && OBR_SDK.isAvailable) {
                     OBR_SDK.onReady(async () => {
                         isObrConnected = true;
-                        document.getElementById("obrStatusDot").classList.add("connected");
-                        document.getElementById("obrStatusText").innerText = "OBR Room Connected";
+                        const dot = document.getElementById("obrStatusDot");
+                        const txt = document.getElementById("obrStatusText");
+                        if (dot) dot.classList.add("connected");
+                        if (txt) txt.innerText = "OBR Room Connected";
 
                         const role = await OBR_SDK.player.getRole();
                         setGmPermission(role === "GM");
