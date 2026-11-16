@@ -161,6 +161,7 @@
         .log-line { padding: 3px 0; border-bottom: 1px solid rgba(255,255,255,.07); font-size: 12px; color: #d1d5db; }
         .log-line:last-child { border-bottom: none; }
         label.chip input { vertical-align: middle; margin-right: 3px; }
+        body.player-view .gm-only { display: none !important; }
     </style>
 </head>
 <body>
@@ -173,23 +174,23 @@
             <span id="roundBadge" onclick="resetRounds()" class="chip" title="Click to reset combat round to Rd 1">Rd 1</span>
         </div>
         <div class="row-center">
-            <button onclick="linkSelectedMapToken()" class="btn-emerald-outline" title="Create a new entity from the selected Owlbear Rodeo token">🔗 From Token</button>
+            <button onclick="linkSelectedMapToken()" class="btn-emerald-outline gm-only" title="Create a new entity from the selected Owlbear Rodeo token">🔗 From Token</button>
             <button onclick="toggleGmMode()" id="gmModeBtn" class="btn-gm-on">🔒 <span id="gmModeText">GM Mode: ON</span></button>
         </div>
     </div>
 
     <div class="toolbar">
-        <div class="seg">
+        <div class="seg gm-only">
             <button onclick="openAddModal('pc')" class="btn-amber">+ PC</button>
             <button onclick="openAddModal('npc')" class="btn-blue">+ NPC</button>
             <button onclick="openAddModal('enemy')" class="btn-red">+ Enemy</button>
         </div>
-        <div class="seg">
+        <div class="seg gm-only">
             <button onclick="rollAllInitiative()" class="btn-indigo" title="Roll 1d10 + Speed Factor (Lowest acts first)">🎲 Roll Init</button>
             <button onclick="nextTurn()" class="btn-indigo-dark" title="Advance to next living combatant">⏭️ Next</button>
         </div>
-        <label class="chip" style="cursor:pointer;" title="Pan the map to each combatant when you press Next"><input type="checkbox" id="followTurn" onchange="setFollowTurn(this.checked)">📷 Follow</label>
-        <button id="revealAllBtn" onclick="revealAllHidden()" class="btn-gm-off" title="Reveal every hidden entity (and its map token) to players">👁 Reveal All</button>
+        <label class="chip gm-only" style="cursor:pointer;" title="Pan the map to each combatant when you press Next"><input type="checkbox" id="followTurn" onchange="setFollowTurn(this.checked)">📷 Follow</label>
+        <button id="revealAllBtn" onclick="revealAllHidden()" class="btn-gm-off gm-only" title="Reveal every hidden entity (and its map token) to players">👁 Reveal All</button>
         <select id="groupFilter" onchange="renderRoster()" title="Filter roster" style="width:auto; color:#fbbf24; font-weight:700;">
             <option value="all">All</option>
             <option value="pc">PCs</option>
@@ -198,7 +199,7 @@
         </select>
     </div>
 
-    <div class="xp-strip">
+    <div class="xp-strip gm-only">
         <div class="row-center">
             <span class="text-muted">Combat XP Pool</span>
             <span id="xpPoolDisplay" class="text-amber" style="font-size:14px;">0 XP</span>
@@ -223,7 +224,7 @@
         <span id="obrStatusDot" class="status-dot"></span>
         <span id="obrStatusText">Browser Mode (Local Save)</span>
     </div>
-    <div class="row-center">
+    <div class="row-center gm-only">
         <button onclick="syncAllTokensToMap()" class="btn-ghost" title="Push all linked stats badges to Owlbear Rodeo tokens">🔄 Sync Map Badges</button>
         <button onclick="exportRosterJson()" class="btn-ghost">⬇ Export</button>
         <label class="btn-ghost" style="cursor:pointer; border-radius:6px; padding:2px 6px;">
@@ -432,7 +433,7 @@
     let logHistory = [];
     let logOpen = false;
     let followTurn = false;
-    let gmMode = true;
+    let gmMode = (window.self === window.top); // inside Owlbear (iframe) start as player until the role is known
     let OBR_SDK = null;
     let buildShape = null;
     let buildText = null;
@@ -575,6 +576,7 @@
     }
 
     function rollMorale(id) {
+        if (!gmOnly()) return;
         const ent = entities.find(e => e.id === id);
         if (!ent) return;
         const target = ent.morale || 12;
@@ -587,6 +589,7 @@
     }
 
     function levelUpClass(id, classIndex) {
+        if (!gmOnly()) return;
         const ent = entities.find(e => e.id === id);
         if (!ent || ent.type === "enemy") return;
 
@@ -851,6 +854,7 @@
     }
 
     async function bindExistingEntityToMapToken(id) {
+        if (!gmOnly()) return;
         const ent = entities.find(e => e.id === id);
         if (!ent) return;
 
@@ -1003,7 +1007,7 @@
         try {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
         } catch (e) {}
-        if (isObrConnected && OBR_SDK) {
+        if (isObrConnected && OBR_SDK && gmMode) {
             try {
                 await OBR_SDK.room.setMetadata({ [META_KEY]: payload });
             } catch (e) {}
@@ -1024,6 +1028,9 @@
             if (txt) txt.innerText = "Player View";
             if (distBtn) distBtn.classList.add("hidden");
         }
+        document.body.classList.toggle("player-view", !gmMode);
+        // Inside Owlbear the role decides; the manual GM switch only exists in plain-browser mode
+        if (btn) btn.classList.toggle("hidden", isObrConnected && !gmMode);
         renderRoster();
     }
 
@@ -1035,7 +1042,14 @@
         setGmPermission(!gmMode);
     }
 
+    function gmOnly() {
+        if (gmMode) return true;
+        logAction("🔒 Only the GM can do that.");
+        return false;
+    }
+
     function resetRounds() {
+        if (!gmOnly()) return;
         currentRound = 1;
         activeTurnIndex = 0;
         logAction("🔄 Combat tracker reset to <b>Round 1</b>.");
@@ -1052,6 +1066,7 @@
     }
 
     async function linkSelectedMapToken() {
+        if (!gmOnly()) return;
         if (!isObrConnected || !OBR_SDK) {
             openAddModal('enemy', "Simulated Map Token", "sim_tok_" + Date.now());
             return;
@@ -1070,6 +1085,7 @@
     }
 
     function rollAllInitiative() {
+        if (!gmOnly()) return;
         entities.forEach(ent => {
             const baseRoll = Math.floor(Math.random() * 10) + 1;
             const speed = ent.weaponSpeed !== undefined ? ent.weaponSpeed : 5;
@@ -1085,6 +1101,7 @@
     }
 
     async function nextTurn() {
+        if (!gmOnly()) return;
         if (entities.length === 0) return;
         let attempts = 0;
         do {
@@ -1107,6 +1124,7 @@
     }
 
     function updateSpeed(id, val) {
+        if (!gmOnly()) return;
         const ent = entities.find(e => e.id === id);
         if (!ent) return;
         ent.weaponSpeed = parseInt(val, 10) || 0;
@@ -1226,6 +1244,7 @@
                 const isDead = ent.hp <= 0;
                 const hpPercent = Math.max(0, Math.min(100, (ent.hp / ent.maxHp) * 100));
                 const accent = g.color;
+                const rollCls = (gmMode || ent.type === 'pc') ? '' : 'hidden';
 
                 const card = document.createElement("div");
                 card.className = `card ${isTurn ? 'card-turn' : ''} ${isEnemy ? 'card-enemy' : ''} ${isDead ? 'card-dead' : ''} ${ent.hidden ? 'card-hidden' : ''}`;
@@ -1244,6 +1263,7 @@
                 else if (hpPercent < 50) { enemyHealthDesc = "Wounded 🟡"; bandPct = 40; }
                 else if (hpPercent < 75) { enemyHealthDesc = "Injured 🟠"; bandPct = 70; }
                 const fillPct = showEnemyStats ? hpPercent : bandPct;
+                const displayHpValue = showEnemyStats ? `${ent.hp} / ${ent.maxHp}` : enemyHealthDesc;
 
                 let awardBtnText = "🎁 Award XP";
                 const hasWisBonus = (ent.wis || 10) >= 18;
@@ -1272,29 +1292,29 @@
                         </div>
                         <div class="actions">
                             ${gmMode ? `<button onclick="event.stopPropagation(); toggleHidden('${ent.id}')" title="${ent.hidden ? 'Reveal to players' : 'Hide from players'}" class="${ent.hidden ? 'btn-indigo' : 'btn-gm-off'} btn-icon">${ent.hidden ? '🙈' : '👁'}</button>` : ''}
-                            <button onclick="event.stopPropagation(); rollAttack('${ent.id}')" title="Roll 1d20 Attack vs THAC0" class="btn-amber btn-icon">⚔️</button>
-                            <button onclick="event.stopPropagation(); rollDamage('${ent.id}')" title="Roll Weapon Damage" class="btn-red btn-icon">💥</button>
-                            <button onclick="event.stopPropagation(); openEditModal('${ent.id}')" title="Edit" class="btn-gm-off btn-icon">⚙️</button>
+                            <button onclick="event.stopPropagation(); rollAttack('${ent.id}')" title="Roll 1d20 Attack vs THAC0" class="btn-amber btn-icon ${rollCls}">⚔️</button>
+                            <button onclick="event.stopPropagation(); rollDamage('${ent.id}')" title="Roll Weapon Damage" class="btn-red btn-icon ${rollCls}">💥</button>
+                            <button onclick="event.stopPropagation(); openEditModal('${ent.id}')" title="Edit" class="btn-gm-off btn-icon gm-only">⚙️</button>
                         </div>
                     </div>
 
                     <div class="hp ${fillPct < 25 ? 'low' : ''}">
                         <div class="hp-fill" style="width:${fillPct}%"></div>
                         <span class="hp-ico">❤ HP</span>
-                        ${showEnemyStats
+                        ${gmMode
                             ? `<input type="text" value="${ent.hp}/${ent.maxHp}" onchange="updateHp('${ent.id}', this.value)" title="Type -6 for damage, +4 for heal, or an exact HP">`
-                            : `<span class="hp-text">${enemyHealthDesc}</span>`}
+                            : `<span class="hp-text">${displayHpValue}</span>`}
                     </div>
 
                     <div class="stats">
                         <div class="stat s-thac0" title="THAC0"><span class="lbl">THAC0</span><span class="val">${displayThac0}</span></div>
                         <div class="stat s-ac" title="Armor Class"><span class="lbl">AC</span><span class="val">${displayAc}</span></div>
-                        <div class="stat s-spd" title="Weapon Speed / Cast Time"><span class="lbl">Speed</span><input type="number" class="val" value="${displaySpeed}" onchange="updateSpeed('${ent.id}', this.value)"></div>
+                        <div class="stat s-spd" title="Weapon Speed / Cast Time"><span class="lbl">Speed</span>${gmMode ? `<input type="number" class="val" value="${displaySpeed}" onchange="updateSpeed('${ent.id}', this.value)">` : `<span class="val">${isEnemy ? '??' : displaySpeed}</span>`}</div>
                         <div class="stat s-init" title="Initiative (lowest acts first)"><span class="lbl">Init</span><span class="val">${displayInit}</span></div>
                     </div>
 
-                    <div class="drawer ${isExpanded ? '' : 'hidden'}">
-                        ${(gmMode || !isEnemy) ? `
+                    <div class="drawer ${(isExpanded && (gmMode || ent.type === 'pc')) ? '' : 'hidden'}">
+                        ${gmMode ? `
                             <div class="row-between wrap bar-box">
                                 <div class="row-center">
                                     <input type="number" id="qhp_${ent.id}" placeholder="Amount" style="width:76px;">
@@ -1327,37 +1347,37 @@
                                     <div class="row-between wrap">
                                         <span class="row-center">
                                             ${ent.class1} XP: <b class="text-amber">${ent.xp1 || 0}</b> <span class="text-muted">/ ${nextXp1}</span>
-                                            ${readyLvl1 ? `<button onclick="levelUpClass('${ent.id}', 1)" class="btn-emerald">⬆️ Level Up!</button>` : ''}
+                                            ${readyLvl1 ? `<button onclick="levelUpClass('${ent.id}', 1)" class="btn-emerald gm-only">⬆️ Level Up!</button>` : ''}
                                         </span>
                                         ${ent.class2 ? `
                                             <span class="row-center">
                                                 ${ent.class2} XP: <b class="text-amber">${ent.xp2 || 0}</b> <span class="text-muted">/ ${nextXp2}</span>
-                                                ${readyLvl2 ? `<button onclick="levelUpClass('${ent.id}', 2)" class="btn-emerald">⬆️ Level Up!</button>` : ''}
+                                                ${readyLvl2 ? `<button onclick="levelUpClass('${ent.id}', 2)" class="btn-emerald gm-only">⬆️ Level Up!</button>` : ''}
                                             </span>
                                         ` : ''}
                                     </div>
                                     <div class="row-between wrap">
-                                        <div class="row-center">
+                                        <div class="row-center gm-only">
                                             <input type="number" id="awardInput_${ent.id}" placeholder="XP…" style="width:80px;">
                                             <button onclick="promptAwardXp('${ent.id}')" class="btn-amber">${awardBtnText}</button>
                                         </div>
-                                        <button onclick="bindExistingEntityToMapToken('${ent.id}')" class="btn-emerald-outline">${ent.tokenId ? '🔗 Re-link' : '🔗 Link Token'}</button>
+                                        <button onclick="bindExistingEntityToMapToken('${ent.id}')" class="btn-emerald-outline gm-only">${ent.tokenId ? '🔗 Re-link' : '🔗 Link Token'}</button>
                                     </div>
                                 </div>
                             ` : `
-                                <div class="row-between">
+                                <div class="row-between gm-only">
                                     <span class="text-muted">NPC Token Sync</span>
-                                    <button onclick="bindExistingEntityToMapToken('${ent.id}')" class="btn-emerald-outline">${ent.tokenId ? '🔗 Re-link' : '🔗 Link Token'}</button>
+                                    <button onclick="bindExistingEntityToMapToken('${ent.id}')" class="btn-emerald-outline gm-only">${ent.tokenId ? '🔗 Re-link' : '🔗 Link Token'}</button>
                                 </div>
                             `}
                         ` : `
-                            <div class="bar-box" style="display:flex; flex-direction:column; gap:8px;">
+                            <div class="bar-box gm-only" style="display:flex; flex-direction:column; gap:8px;">
                                 <div class="row-between wrap">
                                     <span class="text-muted">Monster XP: <b class="text-amber">${ent.monsterXp || 50} XP</b></span>
                                     <button onclick="rollMorale('${ent.id}')" class="btn-indigo">🎲 Morale (2d10 ≤ ${ent.morale || 12})</button>
                                 </div>
                                 <div class="row-between wrap">
-                                    <button onclick="bindExistingEntityToMapToken('${ent.id}')" class="btn-emerald-outline">${ent.tokenId ? '🔗 Re-link' : '🔗 Link Token'}</button>
+                                    <button onclick="bindExistingEntityToMapToken('${ent.id}')" class="btn-emerald-outline gm-only">${ent.tokenId ? '🔗 Re-link' : '🔗 Link Token'}</button>
                                     <button onclick="defeatMonster('${ent.id}')" ${ent.defeated ? 'disabled' : ''} class="${ent.defeated ? 'btn-gm-off' : 'btn-red'}">
                                         ${ent.defeated ? '✅ XP in Pool' : '💀 Defeat (To Pool)'}
                                     </button>
@@ -1413,6 +1433,7 @@ async function applyTokenVisibility(ent) {
     }
 
     function applyQuickHp(id, sign) {
+        if (!gmOnly()) return;
         const ent = entities.find(e => e.id === id);
         const el = document.getElementById(`qhp_${id}`);
         if (!ent || !el) return;
@@ -1486,6 +1507,7 @@ async function applyTokenVisibility(ent) {
     }
 
     function updateHp(id, valStr) {
+        if (!gmOnly()) return;
         const ent = entities.find(e => e.id === id);
         if (!ent) return;
 
@@ -1519,6 +1541,7 @@ async function applyTokenVisibility(ent) {
     }
 
     function promptAwardXp(id) {
+        if (!gmOnly()) return;
         const ent = entities.find(e => e.id === id);
         if (!ent || ent.type !== 'pc') return;
         const inputEl = document.getElementById(`awardInput_${id}`);
@@ -1551,6 +1574,7 @@ async function applyTokenVisibility(ent) {
     }
 
     function defeatMonster(id) {
+        if (!gmOnly()) return;
         const ent = entities.find(e => e.id === id);
         if (!ent || ent.defeated) return;
         ent.hp = 0;
@@ -1601,6 +1625,7 @@ async function applyTokenVisibility(ent) {
     }
 
     function openAddModal(type, presetName = "", tokenId = "", img = "", hiddenPreset = undefined) {
+        if (!gmOnly()) return;
         setVal("editEntityId", "");
         setVal("modalTokenId", tokenId);
         setVal("modalImg", img);
@@ -1651,6 +1676,7 @@ async function applyTokenVisibility(ent) {
     }
 
     function openEditModal(id) {
+        if (!gmOnly()) return;
         const ent = entities.find(e => e.id === id);
         if (!ent) return;
         setVal("editEntityId", ent.id);
@@ -1741,6 +1767,7 @@ async function applyTokenVisibility(ent) {
     }
 
     async function saveEntity() {
+        if (!gmOnly()) return;
         const editIdEl = document.getElementById("editEntityId");
         const tokenIdEl = document.getElementById("modalTokenId");
         const typeEl = document.getElementById("modalType");
@@ -1873,6 +1900,7 @@ async function applyTokenVisibility(ent) {
     }
 
     function exportRosterJson() {
+        if (!gmOnly()) return;
         const blob = new Blob([JSON.stringify({ entities, combatXpPool, currentRound }, null, 2)], { type: "application/json" });
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
@@ -1882,6 +1910,7 @@ async function applyTokenVisibility(ent) {
     }
 
     function importRosterJson(event) {
+        if (!gmOnly()) return;
         const file = event.target.files[0];
         if (!file) return;
         const reader = new FileReader();
@@ -1908,6 +1937,7 @@ async function applyTokenVisibility(ent) {
         const ft = document.getElementById("followTurn");
         if (ft) ft.checked = followTurn;
     } catch (e) {}
+    document.body.classList.toggle("player-view", !gmMode);
     loadLocalState();
     renderRoster();
 
@@ -1918,13 +1948,14 @@ async function applyTokenVisibility(ent) {
             buildShape = mod.buildShape;
             buildText = mod.buildText;
             buildCurve = mod.buildCurve;
+            if (!(OBR_SDK && OBR_SDK.isAvailable)) { setGmPermission(true); return; } // opened outside Owlbear
             if (OBR_SDK && OBR_SDK.isAvailable) {
                 OBR_SDK.onReady(async () => {
                     isObrConnected = true;
                     const dot = document.getElementById("obrStatusDot");
                     const txt = document.getElementById("obrStatusText");
                     if (dot) dot.classList.add("connected");
-                    if (txt) txt.innerText = "OBR Room Connected · v16 badges";
+                    if (txt) txt.innerText = "OBR Room Connected · v17 badges";
 
                     const role = await OBR_SDK.player.getRole();
                     setGmPermission(role === "GM");
@@ -1973,7 +2004,7 @@ async function applyTokenVisibility(ent) {
                         icons: [{
                             icon: "https://www.owlbear.rodeo/favicon.ico",
                             label: "Add / Link to 2e Grimoire",
-                            filter: { every: [{ key: "layer", value: "CHARACTER" }] }
+                            filter: { roles: ["GM"], every: [{ key: "layer", value: "CHARACTER" }] }
                         }],
                         onClick(context) {
                             const item = context.items[0];
@@ -1987,6 +2018,7 @@ async function applyTokenVisibility(ent) {
             }
         } catch (err) {
             console.warn("Owlbear SDK failed to load:", err);
+            logAction("⚠️ Could not connect to Owlbear Rodeo. Reload the extension.");
         }
     })();
 </script>
