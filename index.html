@@ -5,156 +5,188 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AD&D 2e GM Grimoire</title>
     <style>
+        @import url("https://fonts.googleapis.com/css?family=Roboto:400,500,700,900&display=swap");
+        :root {
+            --bg: #1c1b22; --bg2: #25242c; --bg3: #2e2d36; --bg4: #17161c;
+            --line: #3d3c48; --text: rgba(255,255,255,0.92); --muted: #a8a7b5;
+            --amber: #f59e0b; --blue: #60a5fa; --red: #f87171; --green: #4ade80;
+            --thac0: #7dd3fc; --ac: #cbd5e1; --spd: #facc15; --init: #4ade80;
+        }
         * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body { height: 100%; }
         body {
-            background-color: #121417;
-            color: #e2e8f0;
-            font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            font-size: 12px;
-            max-width: 480px;
-            min-height: 100vh;
-            margin: 0 auto;
-            padding: 12px;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            user-select: none;
+            background: var(--bg); color: var(--text);
+            font-family: Roboto, system-ui, -apple-system, "Segoe UI", sans-serif;
+            font-size: 13px; line-height: 1.4; max-width: 520px; margin: 0 auto; padding: 10px;
+            display: flex; flex-direction: column; gap: 8px; user-select: none;
+            -webkit-font-smoothing: antialiased;
         }
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: #1a1d24; }
-        ::-webkit-scrollbar-thumb { background: #374151; border-radius: 3px; }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.3); border-radius: 8px; }
 
-        /* Layout & Containers */
-        header { border-bottom: 1px solid #1f2937; padding-bottom: 8px; margin-bottom: 8px; display: flex; flex-direction: column; gap: 8px; }
-        .row-between { display: flex; justify-content: space-between; align-items: center; gap: 6px; }
+        /* ---------- Layout helpers ---------- */
+        .row-between { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
         .row-center { display: flex; align-items: center; gap: 6px; }
-        .bar-box { background: #111827; border: 1px solid #1f2937; border-radius: 6px; padding: 6px 8px; }
-        .xp-banner { background: rgba(17, 24, 39, 0.9); border: 1px solid rgba(120, 53, 15, 0.5); border-radius: 6px; padding: 8px; }
-        main { flex: 1; overflow-y: auto; max-height: 420px; display: flex; flex-direction: column; gap: 10px; padding-right: 2px; }
+        .wrap { flex-wrap: wrap; }
+        .hidden { display: none !important; }
+        .bar-box { background: var(--bg2); border: 1px solid var(--line); border-radius: 8px; padding: 8px; }
 
-        /* Typography & Colors */
-        .title-amber { font-weight: 700; font-size: 14px; color: #f59e0b; letter-spacing: 0.03em; }
-        .badge-round { background: #1e1b4b; border: 1px solid #4338ca; color: #a5b4fc; font-size: 10px; padding: 2px 6px; border-radius: 4px; font-family: monospace; cursor: pointer; }
-        .badge-round:hover { border-color: #818cf8; color: #fff; }
+        /* ---------- Typography ---------- */
+        .title { font-weight: 900; font-size: 15px; color: var(--amber); letter-spacing: 0.04em; }
         .text-amber { color: #fbbf24; font-weight: 700; }
-        .text-blue { color: #60a5fa; font-weight: 700; }
-        .text-emerald { color: #34d399; font-weight: 700; }
-        .text-red { color: #f87171; font-weight: 700; }
-        .text-muted { color: #9ca3af; font-size: 10px; }
-        .stat-label { display: block; font-size: 8px; text-transform: uppercase; letter-spacing: 0.05em; color: #9ca3af; font-weight: 600; }
-        .group-header { display: flex; justify-content: space-between; align-items: center; font-weight: 700; font-size: 11px; padding: 2px 2px 6px; border-bottom: 1px solid #1f2937; margin-bottom: 6px; }
-        .init-pill { display: inline-block; background: #1f2937; border: 1px solid #374151; border-radius: 10px; color: #d1d5db; font-weight: 600; }
-        .init-pill-active { background: rgba(120, 53, 15, 0.6); border-color: #f59e0b; color: #fde68a; }
+        .text-blue { color: var(--blue); font-weight: 700; }
+        .text-emerald { color: var(--green); font-weight: 700; }
+        .text-red { color: var(--red); font-weight: 700; }
+        .text-muted { color: var(--muted); font-size: 11px; }
+        label.text-muted, .field > label { display: block; margin-bottom: 2px; font-weight: 500; }
+        .stat-label { display: block; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin-bottom: 1px; }
 
-        /* Buttons & Inputs */
-        button { cursor: pointer; border: none; border-radius: 4px; font-size: 11px; font-weight: 600; padding: 4px 8px; color: #fff; transition: opacity 0.15s, transform 0.1s; }
-        button:hover { opacity: 0.9; }
-        button:active { transform: scale(0.98); }
-        button:disabled { opacity: 0.45; cursor: not-allowed; }
-        .btn-amber { background: #d97706; }
-        .btn-blue { background: #1e40af; color: #bfdbfe; }
-        .btn-red { background: #991b1b; color: #fecaca; }
-        .btn-indigo { background: #4338ca; }
-        .btn-indigo-dark { background: #312e81; border: 1px solid #4f46e5; color: #c7d2fe; }
-        .btn-emerald { background: #059669; color: #ecfdf5; font-size: 10px; padding: 2px 6px; box-shadow: 0 0 8px rgba(16, 185, 129, 0.35); }
-        .btn-emerald-outline { background: rgba(6, 78, 59, 0.6); border: 1px solid rgba(16, 185, 129, 0.5); color: #a7f3d0; font-size: 10px; }
-        .btn-gm-on { background: rgba(120, 53, 15, 0.6); border: 1px solid rgba(217, 119, 6, 0.5); color: #fde68a; font-size: 10px; }
-        .btn-gm-off { background: #1f2937; border: 1px solid #374151; color: #9ca3af; font-size: 10px; }
-        .btn-icon { padding: 4px 6px; font-size: 11px; }
-        .btn-ghost { background: transparent; color: #9ca3af; padding: 2px 4px; }
-        .status-badge { background: #1e1b4b; border: 1px solid #4338ca; color: #c7d2fe; font-size: 9px; padding: 1px 4px; border-radius: 3px; font-weight: 600; display: inline-flex; align-items: center; gap: 2px; }
-
-        input, select {
-            background: #1f2937;
-            border: 1px solid #374151;
-            color: #fff;
-            border-radius: 4px;
-            padding: 3px 5px;
-            font-size: 11px;
+        /* ---------- Buttons ---------- */
+        button {
+            font: inherit; font-size: 12px; font-weight: 600; color: #fff; cursor: pointer;
+            border: 1px solid transparent; border-radius: 6px; padding: 5px 10px; min-height: 30px;
+            transition: filter .15s, transform .08s, background .15s; white-space: nowrap;
         }
-        .input-mini { width: 44px; text-align: center; font-weight: 700; font-size: 10px; padding: 2px; background: #111827; }
-        .input-spd { width: 32px; text-align: center; font-weight: 700; font-size: 10px; padding: 2px; color: #fcd34d; background: #111827; }
+        button:hover { filter: brightness(1.15); }
+        button:active { transform: scale(0.97); }
+        button:disabled { opacity: .45; cursor: not-allowed; filter: none; }
+        button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid #fff; outline-offset: 1px; }
+        .btn-amber { background: #b45309; border-color: #d97706; }
+        .btn-blue { background: #1d4ed8; border-color: #3b82f6; }
+        .btn-red { background: #991b1b; border-color: #dc2626; }
+        .btn-indigo { background: #4338ca; border-color: #6366f1; }
+        .btn-indigo-dark { background: #312e81; border-color: #4f46e5; color: #c7d2fe; }
+        .btn-emerald { background: #059669; border-color: #10b981; font-size: 11px; padding: 2px 8px; min-height: 24px; }
+        .btn-emerald-outline { background: rgba(6,78,59,.55); border-color: rgba(16,185,129,.6); color: #a7f3d0; }
+        .btn-gm-on { background: rgba(120,53,15,.6); border-color: rgba(217,119,6,.7); color: #fde68a; }
+        .btn-gm-off { background: var(--bg3); border-color: var(--line); color: var(--muted); }
+        .btn-icon { padding: 4px 8px; font-size: 14px; min-width: 34px; }
+        .btn-ghost { background: transparent; color: var(--muted); border-color: transparent; padding: 2px 6px; min-height: 24px; font-size: 11px; }
+        .btn-ghost:hover { color: #fff; }
 
-        /* Tactical Card */
-        .card { background: #111827; border: 1px solid #1f2937; border-radius: 8px; padding: 8px; display: flex; flex-direction: column; gap: 8px; margin-bottom: 6px; transition: opacity 0.2s; position: relative; }
-        .card-turn { border-color: #f59e0b; box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.4); }
-        .card-enemy { border-color: rgba(127, 29, 29, 0.5); }
-        .card-dead { opacity: 0.6; }
+        /* ---------- Inputs ---------- */
+        input, select {
+            background: var(--bg3); border: 1px solid #7a7986; color: #fff; border-radius: 5px;
+            padding: 0 6px; height: 28px; font: inherit; font-size: 12px; min-width: 0;
+        }
+        input[type="checkbox"] { height: auto; accent-color: #6366f1; }
+        input:focus-visible, select:focus-visible { border-color: #fff; }
 
-        .tactical-grid { display: grid; grid-template-columns: 55px 1fr 55px; gap: 6px; align-items: center; }
-        .tac-badge { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 3px 2px; border-radius: 4px; font-weight: 800; font-size: 13px; text-align: center; line-height: 1.1; }
-        .badge-thac0 { background: #0f172a; border: 2px solid #38bdf8; color: #38bdf8; }
-        .badge-ac { background: #0f172a; border: 2px solid #94a3b8; color: #f8fafc; }
-        .badge-spd { background: #0f172a; border: 2px solid #facc15; color: #facc15; }
-        .badge-init { background: #0f172a; border: 2px solid #4ade80; color: #4ade80; }
-        .tac-label { font-size: 7px; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.8; font-weight: 600; margin-bottom: 1px; }
+        /* ---------- Top bar ---------- */
+        .topbar { display: flex; flex-direction: column; gap: 8px; }
+        .topbar > .row-between { flex-wrap: wrap; }
+        .topbar .title { white-space: nowrap; }
+        .chip { background: #1e1b4b; border: 1px solid #4338ca; color: #c7d2fe; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; cursor: pointer; }
+        .chip:hover { border-color: #818cf8; color: #fff; }
+        .toolbar { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; justify-content: space-between; }
+        .seg { display: flex; gap: 4px; }
+        .xp-strip { display: flex; justify-content: space-between; align-items: center; gap: 8px; background: var(--bg2); border: 1px solid rgba(180,83,9,.6); border-radius: 8px; padding: 6px 8px; }
 
-        .hero-hp-bar { width: 100%; background: #991b1b; border: 1px solid #dc2626; border-radius: 4px; padding: 4px 8px; display: flex; justify-content: space-between; align-items: center; color: #fff; font-weight: 800; font-size: 13px; text-shadow: 0 1px 2px rgba(0,0,0,0.8); }
-        .hero-hp-bar input { background: transparent; border: none; color: #fff; font-weight: 800; font-size: 13px; width: 65px; text-align: right; }
+        /* ---------- Roster ---------- */
+        main { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding-right: 2px; }
+        .group-header { display: flex; justify-content: space-between; align-items: center; cursor: pointer; padding: 6px 4px; font-weight: 700; font-size: 13px; border-bottom: 1px solid var(--line); margin-bottom: 6px; }
+        .group-header:hover { background: rgba(255,255,255,.04); }
+        .chev { font-size: 11px; color: var(--muted); margin-right: 4px; }
+        .count { background: var(--bg3); color: var(--text); font-size: 11px; border-radius: 999px; padding: 0 7px; margin-left: 6px; }
 
-        /* Expandable Drawer Grids */
-        .drawer { border-top: 1px solid #1f2937; padding-top: 6px; display: flex; flex-direction: column; gap: 6px; }
-        .grid-6 { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; background: #090a0f; padding: 4px; border-radius: 4px; text-align: center; }
-        .grid-5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; background: #090a0f; padding: 4px; border-radius: 4px; text-align: center; }
-        .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
-        .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
-        .roll-box { background: #111827; border: 1px solid #1f2937; padding: 3px 2px; border-radius: 4px; }
-        .roll-box:hover { background: #1f2937; border-color: #4b5563; }
+        .card { position: relative; background: var(--bg2); border: 1px solid var(--line); border-radius: 8px; padding: 8px 8px 8px 12px; display: flex; flex-direction: column; gap: 8px; margin-bottom: 6px; overflow: hidden; }
+        .card::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--accent, #6b7280); }
+        .card-enemy { background: linear-gradient(to bottom, rgba(255,0,0,.16) 0%, var(--bg2) 60%); }
+        .card-turn { border-color: #facc15; box-shadow: 0 0 0 1px rgba(250,204,21,.5); }
+        .card-dead { opacity: .6; }
 
-        /* Action Log & Footer */
-        #actionLog { margin-top: 8px; background: #090a0f; border: 1px solid #1f2937; border-radius: 6px; padding: 8px 10px; text-align: center; color: #d1d5db; min-height: 38px; display: flex; align-items: center; justify-content: center; }
-        #actionLogText { display: inline-block; line-height: 1.4; word-spacing: normal; }
-        footer { margin-top: 8px; padding-top: 8px; border-top: 1px solid #1f2937; font-size: 10px; color: #9ca3af; }
-        .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; background: #f59e0b; }
+        .card-head { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+        .avatar { flex: none; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 16px; color: #111; background: var(--accent, #9ca3af); border: 2px solid rgba(255,255,255,.35); }
+        .who { flex: 1; min-width: 0; }
+        .name { font-weight: 700; font-size: 14px; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .sub { color: var(--muted); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .tags { display: flex; gap: 3px; flex-wrap: wrap; margin-top: 2px; }
+        .status-badge { background: #1e1b4b; border: 1px solid #4338ca; color: #c7d2fe; font-size: 10px; padding: 0 5px; border-radius: 4px; font-weight: 600; display: inline-flex; align-items: center; gap: 3px; }
+        .turn-pill { background: #854d0e; border: 1px solid #facc15; color: #fef08a; font-size: 10px; font-weight: 700; border-radius: 999px; padding: 0 7px; }
+        .actions { display: flex; gap: 4px; flex: none; }
+
+        .hp { position: relative; height: 28px; border-radius: 6px; overflow: hidden; background: #3b1f23; border: 1px solid #7f1d1d; display: flex; align-items: center; }
+        .hp-fill { position: absolute; left: 0; top: 0; bottom: 0; background: linear-gradient(to bottom, #ef4444, #b91c1c); transition: width .25s ease; }
+        .hp.low .hp-fill { background: linear-gradient(to bottom, #f97316, #c2410c); }
+        .hp-ico { position: relative; z-index: 1; padding-left: 8px; font-size: 12px; font-weight: 700; text-shadow: 0 1px 2px #000; }
+        .hp input, .hp .hp-text { position: relative; z-index: 1; flex: 1; width: 100%; background: transparent; border: none; color: #fff; text-align: center; font-weight: 700; font-size: 14px; text-shadow: 0 1px 2px #000; height: 100%; }
+        .hp input:focus-visible { outline-offset: -2px; }
+
+        .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+        .stat { background: var(--bg4); border: 1px solid var(--line); border-top: 3px solid var(--c); border-radius: 6px; text-align: center; padding: 3px 2px 4px; }
+        .stat .lbl { display: block; font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--c); }
+        .stat .val { display: block; font-size: 18px; font-weight: 900; line-height: 1.2; color: #fff; }
+        .stat input.val { width: 100%; height: 26px; border: none; background: transparent; text-align: center; padding: 0; }
+        .s-thac0 { --c: var(--thac0); } .s-ac { --c: var(--ac); } .s-spd { --c: var(--spd); } .s-init { --c: var(--init); }
+
+        .drawer { border-top: 1px solid var(--line); padding-top: 8px; display: flex; flex-direction: column; gap: 8px; }
+        .grid-6 { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; text-align: center; }
+        .grid-5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; text-align: center; }
+        .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+        .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+        .roll-box { background: var(--bg4); border: 1px solid var(--line); padding: 4px 2px; border-radius: 6px; font-size: 14px; }
+        .roll-box:hover { background: var(--bg3); border-color: #6b7280; filter: none; }
+
+        /* ---------- Log & footer ---------- */
+        #actionLog { background: var(--bg4); border: 1px solid var(--line); border-left: 4px solid var(--amber); border-radius: 6px; padding: 8px 10px; color: #e5e7eb; min-height: 40px; display: flex; align-items: center; font-size: 13px; }
+        #actionLogText { line-height: 1.4; }
+        footer { padding-top: 6px; border-top: 1px solid var(--line); font-size: 11px; color: var(--muted); }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; background: var(--amber); }
         .status-dot.connected { background: #10b981; }
 
-        /* Modal */
-        .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.82); display: flex; align-items: center; justify-content: center; z-index: 50; padding: 10px; overflow-y: auto; }
-        .modal-box { background: #111827; border: 1px solid #374151; width: 100%; max-width: 390px; border-radius: 8px; padding: 12px; display: flex; flex-direction: column; gap: 8px; max-height: 95vh; overflow-y: auto; }
-        .modal-box input, .modal-box select { width: 100%; }
-        .hidden { display: none !important; }
+        /* ---------- Modal ---------- */
+        .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.75); display: flex; align-items: center; justify-content: center; z-index: 50; padding: 8px; }
+        .modal-box { background: var(--bg); border: 1px solid var(--line); width: 100%; max-width: 440px; max-height: 96vh; border-radius: 10px; display: flex; flex-direction: column; overflow: hidden; }
+        .modal-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 10px 12px; background: var(--bg2); border-bottom: 1px solid var(--line); }
+        .modal-body { padding: 10px 12px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; }
+        .modal-foot { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 10px 12px; background: var(--bg2); border-top: 1px solid var(--line); }
+        .sec { background: var(--bg2); border: 1px solid var(--line); border-radius: 8px; padding: 8px; display: flex; flex-direction: column; gap: 8px; }
+        .sec-title { font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--amber); }
+        .modal-box input:not([type="checkbox"]), .modal-box select { width: 100%; text-align: center; }
+        .modal-box input[type="text"] { text-align: left; }
+        .chk-row { display: flex; gap: 6px; flex-wrap: wrap; }
+        .chk-row .status-badge { font-size: 11px; padding: 3px 7px; cursor: pointer; }
     </style>
 </head>
 <body>
 
 <!-- TOP HEADER & CONTROLS -->
-<header>
+<header class="topbar">
     <div class="row-between">
         <div class="row-center">
-            <span class="title-amber">⚔️ AD&D 2E GRIMOIRE</span>
-            <span id="roundBadge" onclick="resetRounds()" class="badge-round" title="Click to reset combat round to Rd 1">Rd 1</span>
+            <span class="title">⚔️ AD&D 2E GRIMOIRE</span>
+            <span id="roundBadge" onclick="resetRounds()" class="chip" title="Click to reset combat round to Rd 1">Rd 1</span>
         </div>
         <div class="row-center">
-            <button onclick="linkSelectedMapToken()" class="btn-emerald-outline" title="Create a new entity from the selected Owlbear Rodeo token">🔗 + From Token</button>
+            <button onclick="linkSelectedMapToken()" class="btn-emerald-outline" title="Create a new entity from the selected Owlbear Rodeo token">🔗 From Token</button>
             <button onclick="toggleGmMode()" id="gmModeBtn" class="btn-gm-on">🔒 <span id="gmModeText">GM Mode: ON</span></button>
         </div>
     </div>
 
-    <!-- ADD ENTITY & INITIATIVE BAR -->
-    <div class="bar-box row-between">
-        <div class="row-center">
+    <div class="toolbar">
+        <div class="seg">
             <button onclick="openAddModal('pc')" class="btn-amber">+ PC</button>
             <button onclick="openAddModal('npc')" class="btn-blue">+ NPC</button>
             <button onclick="openAddModal('enemy')" class="btn-red">+ Enemy</button>
         </div>
-        <div class="row-center">
-            <button onclick="rollAllInitiative()" class="btn-indigo" title="Roll 1d10 + Speed Factor (Lowest acts first)">🎲 Init</button>
+        <div class="seg">
+            <button onclick="rollAllInitiative()" class="btn-indigo" title="Roll 1d10 + Speed Factor (Lowest acts first)">🎲 Roll Init</button>
             <button onclick="nextTurn()" class="btn-indigo-dark" title="Advance to next living combatant">⏭️ Next</button>
-            <select id="groupFilter" onchange="renderRoster()" style="color:#fbbf24; font-weight:700;">
-                <option value="all">All</option>
-                <option value="pc">PCs</option>
-                <option value="npc">NPCs</option>
-                <option value="enemy">Enemies</option>
-            </select>
         </div>
+        <select id="groupFilter" onchange="renderRoster()" title="Filter roster" style="width:auto; color:#fbbf24; font-weight:700;">
+            <option value="all">All</option>
+            <option value="pc">PCs</option>
+            <option value="npc">NPCs</option>
+            <option value="enemy">Enemies</option>
+        </select>
     </div>
 
-    <!-- COMBAT XP POOL BANNER -->
-    <div class="xp-banner row-between">
+    <div class="xp-strip">
         <div class="row-center">
-            <span class="text-muted" style="font-size:11px;">Combat XP Pool:</span>
-            <span id="xpPoolDisplay" class="text-amber" style="font-size:13px;">0 XP</span>
-            <button id="clearXpBtn" onclick="clearXpPool()" class="btn-ghost hidden" title="Clear XP Pool" style="font-size:10px;">✕</button>
+            <span class="text-muted">Combat XP Pool</span>
+            <span id="xpPoolDisplay" class="text-amber" style="font-size:14px;">0 XP</span>
+            <button id="clearXpBtn" onclick="clearXpPool()" class="btn-ghost hidden" title="Clear XP Pool">✕</button>
         </div>
         <button id="distributeXpBtn" onclick="distributeXpPool()" class="btn-amber">✨ Distribute to Party</button>
     </div>
@@ -169,16 +201,16 @@
 </div>
 
 <!-- FOOTER: OBR STATUS & BACKUP -->
-<footer class="row-between">
+<footer class="row-between wrap">
     <div class="row-center">
         <span id="obrStatusDot" class="status-dot"></span>
         <span id="obrStatusText">Browser Mode (Local Save)</span>
     </div>
     <div class="row-center">
-        <button onclick="syncAllTokensToMap()" class="btn-ghost" title="Push all linked HP & stats badges to Owlbear Rodeo tokens" style="text-decoration:underline;">Sync Map Badges</button>
-        <button onclick="exportRosterJson()" class="btn-ghost" style="text-decoration:underline;">Export JSON</button>
-        <label style="cursor:pointer; text-decoration:underline; color:#9ca3af;">
-            Import JSON
+        <button onclick="syncAllTokensToMap()" class="btn-ghost" title="Push all linked stats badges to Owlbear Rodeo tokens">🔄 Sync Map Badges</button>
+        <button onclick="exportRosterJson()" class="btn-ghost">⬇ Export</button>
+        <label class="btn-ghost" style="cursor:pointer; border-radius:6px; padding:2px 6px;">
+            ⬆ Import
             <input type="file" accept=".json" onchange="importRosterJson(event)" class="hidden">
         </label>
     </div>
@@ -187,196 +219,145 @@
 <!-- ADD/EDIT ENTITY MODAL -->
 <div id="entityModal" class="modal-backdrop hidden">
     <div class="modal-box">
-        <div class="row-between">
-            <h2 id="modalTitle" class="title-amber">Add Entity</h2>
-            <button type="button" id="autoCalcBtn" onclick="autoCalcAll2eStats(true)" class="btn-amber" style="font-size:10px; padding:3px 7px;" title="Recalculate HP, THAC0, and Saving Throws from Class & Level">⚡ Auto-Calc 2e</button>
-        </div>
-        <input type="hidden" id="editEntityId">
-        <input type="hidden" id="modalTokenId">
-
-        <div class="grid-2">
-            <div>
-                <label class="text-muted">Name</label>
-                <input type="text" id="modalName">
-            </div>
-            <div>
-                <label class="text-muted">Group Category</label>
-                <select id="modalType" onchange="toggleEntityFields()">
-                    <option value="pc">Player Character (PC)</option>
-                    <option value="npc">Non-Player Character (NPC)</option>
-                    <option value="enemy">Enemy / Monster</option>
-                </select>
-            </div>
+        <div class="modal-head">
+            <h2 id="modalTitle" class="title">Add Entity</h2>
+            <button type="button" id="autoCalcBtn" onclick="autoCalcAll2eStats(true)" class="btn-amber" title="Recalculate HP, THAC0, and Saving Throws from Class & Level">⚡ Auto-Calc 2e</button>
         </div>
 
-        <div class="grid-3">
-            <div>
-                <label class="text-muted">HP (Cur / Max)</label>
-                <div class="row-center">
-                    <input type="number" id="modalHp" value="15" style="text-align:center;">
-                    <input type="number" id="modalMaxHp" value="15" style="text-align:center;">
-                </div>
-            </div>
-            <div>
-                <label class="text-muted" id="thac0Label">THAC0 (Auto)</label>
-                <input type="number" id="modalThac0" value="20" style="text-align:center; color:#fbbf24; font-weight:700;">
-            </div>
-            <div>
-                <label class="text-muted">Armor Class (AC)</label>
-                <input type="number" id="modalAc" value="10" style="text-align:center;">
-            </div>
-        </div>
+        <div class="modal-body">
+            <input type="hidden" id="editEntityId">
+            <input type="hidden" id="modalTokenId">
 
-        <!-- WEAPON STATS, DAMAGE MOD, SPEED FACTOR & TO-HIT MOD -->
-        <div class="bar-box" style="display:flex; flex-direction:column; gap:6px;">
-            <div class="grid-2">
-                <div>
-                    <label class="text-muted">Weapon Dice</label>
-                    <input type="text" id="modalWeaponDice" value="1d8" style="text-align:center;">
-                </div>
-                <div>
-                    <label class="text-muted" title="Flat damage bonus (Str, magic, spec)">+Dmg Mod</label>
-                    <input type="number" id="modalDmgMod" value="0" style="text-align:center;">
-                </div>
-            </div>
-            <div class="grid-2">
-                <div>
-                    <label class="text-muted" title="Magic weapon, spec, or Str to-hit bonus">+Hit Mod</label>
-                    <input type="number" id="modalToHit" value="0" style="text-align:center;">
-                </div>
-                <div>
-                    <label class="text-amber" style="font-size:10px;">Speed / Cast</label>
-                    <input type="number" id="modalWeaponSpeed" value="5" style="text-align:center; color:#fbbf24; font-weight:700;">
-                </div>
-            </div>
-        </div>
-
-        <!-- ENEMY / MONSTER SPECIFIC FIELDS (Hit Dice & Morale) -->
-        <div id="enemyFields" class="hidden" style="border-top:1px solid #1f2937; padding-top:8px;">
-            <div class="grid-3">
-                <div>
-                    <label class="text-muted">Hit Dice (HD)</label>
-                    <input type="text" id="modalHd" value="3+1" onchange="autoCalcMonsterThac0()" style="text-align:center;" title="e.g. 3+1 (Auto-sets THAC0 = 20 - HD)">
-                </div>
-                <div>
-                    <label class="text-muted">Morale (2d10)</label>
-                    <input type="number" id="modalMorale" value="12" style="text-align:center;">
-                </div>
-                <div>
-                    <label class="text-muted">XP Reward</label>
-                    <input type="number" id="modalMonsterXp" value="65" style="text-align:center;">
-                </div>
-            </div>
-        </div>
-
-        <!-- PC / NPC SPECIFIC FIELDS -->
-        <div id="characterFields" style="display:flex; flex-direction:column; gap:8px; border-top:1px solid #1f2937; padding-top:8px;">
-            <div class="grid-2">
-                <div>
-                    <label class="text-muted">Primary Class</label>
-                    <select id="modalClass1" onchange="onClassSelectionChange()">
-                        <option value="Fighter">Fighter (Warrior)</option>
-                        <option value="Paladin">Paladin (Warrior)</option>
-                        <option value="Ranger">Ranger (Warrior)</option>
-                        <option value="Priest">Priest / Cleric</option>
-                        <option value="Druid">Druid (Priest)</option>
-                        <option value="Thief">Thief (Rogue)</option>
-                        <option value="Bard">Bard (Rogue)</option>
-                        <option value="Wizard">Wizard / Mage</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="text-muted">Secondary Class (Multi)</label>
-                    <select id="modalClass2" onchange="onClassSelectionChange()">
-                        <option value="">(None / Single-class)</option>
-                        <option value="Fighter">Fighter (Warrior)</option>
-                        <option value="Ranger">Ranger (Warrior)</option>
-                        <option value="Priest">Priest / Cleric</option>
-                        <option value="Druid">Druid (Priest)</option>
-                        <option value="Thief">Thief (Rogue)</option>
-                        <option value="Wizard">Wizard / Mage</option>
-                    </select>
-                </div>
-            </div>
-
-            <div class="grid-2">
-                <div>
-                    <label id="lblLvl1" class="text-muted">Level</label>
-                    <input type="number" id="modalLvl1" min="1" max="20" onchange="autoCalcAll2eStats(false)" value="1" style="text-align:center;">
-                </div>
-                <div>
-                    <label id="lblXp1" class="text-muted">Experience (XP)</label>
-                    <input type="number" id="modalXp1" value="0" style="text-align:center;">
-                </div>
-            </div>
-
-            <div id="multiClassRow" class="grid-2 hidden">
-                <div>
-                    <label id="lblLvl2" class="text-muted">Class 2 Level</label>
-                    <input type="number" id="modalLvl2" min="1" max="20" onchange="autoCalcAll2eStats(false)" value="1" style="text-align:center;">
-                </div>
-                <div>
-                    <label id="lblXp2" class="text-muted">Class 2 XP</label>
-                    <input type="number" id="modalXp2" value="0" style="text-align:center;">
-                </div>
-            </div>
-
-            <!-- 6 ABILITY SCORES & EXCEPTIONAL STRENGTH -->
-            <div>
-                <div class="row-between" style="margin-bottom:3px;">
-                    <label class="text-amber" style="font-size:10px;">AD&D 2e Ability Scores</label>
-                    <div id="excStrContainer" class="row-center hidden">
-                        <span class="text-muted" style="font-size:9px;">Exceptional STR:</span>
-                        <select id="modalExceptionalStr" style="width:75px; font-size:10px; padding:1px;">
-                            <option value="01">01–50</option>
-                            <option value="51">51–75</option>
-                            <option value="76">76–90</option>
-                            <option value="91">91–99</option>
-                            <option value="00">00</option>
+            <div class="sec">
+                <div class="sec-title">Basics</div>
+                <div class="grid-2">
+                    <div class="field"><label class="text-muted">Name</label><input type="text" id="modalName"></div>
+                    <div class="field"><label class="text-muted">Group</label>
+                        <select id="modalType" onchange="toggleEntityFields()">
+                            <option value="pc">Player Character (PC)</option>
+                            <option value="npc">Non-Player Character (NPC)</option>
+                            <option value="enemy">Enemy / Monster</option>
                         </select>
                     </div>
                 </div>
-                <div class="grid-6">
-                    <div><span class="stat-label">STR</span><input type="number" id="modalStr" value="15" onchange="checkExceptionalStrengthVisibility()" style="text-align:center;"></div>
-                    <div><span class="stat-label">DEX</span><input type="number" id="modalDex" value="14" style="text-align:center;"></div>
-                    <div><span class="stat-label">CON</span><input type="number" id="modalCon" onchange="autoCalcAll2eStats(true)" value="14" style="text-align:center;"></div>
-                    <div><span class="stat-label">INT</span><input type="number" id="modalInt" value="12" style="text-align:center;"></div>
-                    <div><span class="stat-label">WIS</span><input type="number" id="modalWis" value="12" style="text-align:center;" title="18+ Wisdom grants +10% earned XP"></div>
-                    <div><span class="stat-label">CHA</span><input type="number" id="modalCha" value="10" style="text-align:center;"></div>
+                <div class="grid-3">
+                    <div class="field"><label class="text-muted">HP (cur / max)</label>
+                        <div class="row-center"><input type="number" id="modalHp" value="15"><input type="number" id="modalMaxHp" value="15"></div>
+                    </div>
+                    <div class="field"><label class="text-muted" id="thac0Label">THAC0 (Auto)</label><input type="number" id="modalThac0" value="20" style="color:#7dd3fc; font-weight:700;"></div>
+                    <div class="field"><label class="text-muted">Armor Class</label><input type="number" id="modalAc" value="10"></div>
                 </div>
             </div>
 
-            <!-- STATUS / CONDITIONS SELECTOR -->
-            <div>
-                <label class="text-muted" style="font-size:10px; display:block; margin-bottom:3px;">Active Combat Status Tags</label>
-                <div class="row-center" style="gap:4px; flex-wrap:wrap;">
-                    <label class="status-badge"><input type="checkbox" value="Casting ⚡" class="status-chk"> Casting ⚡</label>
-                    <label class="status-badge"><input type="checkbox" value="Blessed ✨" class="status-chk"> Blessed ✨</label>
-                    <label class="status-badge"><input type="checkbox" value="Hasted 💨" class="status-chk"> Hasted 💨</label>
-                    <label class="status-badge"><input type="checkbox" value="Paralyzed 🌀" class="status-chk"> Paralyzed 🌀</label>
-                    <label class="status-badge"><input type="checkbox" value="Blinded 👁️" class="status-chk"> Blinded 👁️</label>
-                    <label class="status-badge"><input type="checkbox" value="Prone ⬇️" class="status-chk"> Prone ⬇️</label>
+            <div class="sec">
+                <div class="sec-title">Weapon &amp; Initiative</div>
+                <div class="grid-2">
+                    <div class="field"><label class="text-muted">Weapon Dice</label><input type="text" id="modalWeaponDice" value="1d8" style="text-align:center;"></div>
+                    <div class="field"><label class="text-muted" title="Flat damage bonus (Str, magic, spec)">+Dmg Mod</label><input type="number" id="modalDmgMod" value="0"></div>
+                    <div class="field"><label class="text-muted" title="Magic weapon, spec, or Str to-hit bonus">+Hit Mod</label><input type="number" id="modalToHit" value="0"></div>
+                    <div class="field"><label class="text-muted" style="color:#facc15;">Speed / Cast</label><input type="number" id="modalWeaponSpeed" value="5" style="color:#facc15; font-weight:700;"></div>
                 </div>
             </div>
 
-            <!-- 5 SAVING THROWS -->
-            <div>
-                <label class="text-emerald" style="font-size:10px; display:block; margin-bottom:3px;">AD&D 2e Saving Throws</label>
-                <div class="grid-5">
-                    <div><span class="stat-label">PPD</span><input type="number" id="modalSavePPD" value="14" style="text-align:center; color:#34d399; font-weight:700;"></div>
-                    <div><span class="stat-label">RSW</span><input type="number" id="modalSaveRSW" value="16" style="text-align:center; color:#34d399; font-weight:700;"></div>
-                    <div><span class="stat-label">PP</span><input type="number" id="modalSavePP" value="15" style="text-align:center; color:#34d399; font-weight:700;"></div>
-                    <div><span class="stat-label">BW</span><input type="number" id="modalSaveBW" value="17" style="text-align:center; color:#34d399; font-weight:700;"></div>
-                    <div><span class="stat-label">SPL</span><input type="number" id="modalSaveSPL" value="17" style="text-align:center; color:#34d399; font-weight:700;"></div>
+            <div id="enemyFields" class="sec hidden">
+                <div class="sec-title">Monster</div>
+                <div class="grid-3">
+                    <div class="field"><label class="text-muted">Hit Dice (HD)</label><input type="text" id="modalHd" value="3+1" onchange="autoCalcMonsterThac0()" style="text-align:center;" title="e.g. 3+1 (Auto-sets THAC0 = 20 - HD)"></div>
+                    <div class="field"><label class="text-muted">Morale (2d10)</label><input type="number" id="modalMorale" value="12"></div>
+                    <div class="field"><label class="text-muted">XP Reward</label><input type="number" id="modalMonsterXp" value="65"></div>
+                </div>
+            </div>
+
+            <div id="characterFields" style="display:flex; flex-direction:column; gap:10px;">
+                <div class="sec">
+                    <div class="sec-title">Class &amp; Level</div>
+                    <div class="grid-2">
+                        <div class="field"><label class="text-muted">Primary Class</label>
+                            <select id="modalClass1" onchange="onClassSelectionChange()">
+                                <option value="Fighter">Fighter (Warrior)</option>
+                                <option value="Paladin">Paladin (Warrior)</option>
+                                <option value="Ranger">Ranger (Warrior)</option>
+                                <option value="Priest">Priest / Cleric</option>
+                                <option value="Druid">Druid (Priest)</option>
+                                <option value="Thief">Thief (Rogue)</option>
+                                <option value="Bard">Bard (Rogue)</option>
+                                <option value="Wizard">Wizard / Mage</option>
+                            </select>
+                        </div>
+                        <div class="field"><label class="text-muted">Secondary (Multi)</label>
+                            <select id="modalClass2" onchange="onClassSelectionChange()">
+                                <option value="">(None / Single-class)</option>
+                                <option value="Fighter">Fighter (Warrior)</option>
+                                <option value="Ranger">Ranger (Warrior)</option>
+                                <option value="Priest">Priest / Cleric</option>
+                                <option value="Druid">Druid (Priest)</option>
+                                <option value="Thief">Thief (Rogue)</option>
+                                <option value="Wizard">Wizard / Mage</option>
+                            </select>
+                        </div>
+                        <div class="field"><label id="lblLvl1" class="text-muted">Level</label><input type="number" id="modalLvl1" min="1" max="20" onchange="autoCalcAll2eStats(false)" value="1"></div>
+                        <div class="field"><label id="lblXp1" class="text-muted">Experience (XP)</label><input type="number" id="modalXp1" value="0"></div>
+                    </div>
+                    <div id="multiClassRow" class="grid-2 hidden">
+                        <div class="field"><label id="lblLvl2" class="text-muted">Class 2 Level</label><input type="number" id="modalLvl2" min="1" max="20" onchange="autoCalcAll2eStats(false)" value="1"></div>
+                        <div class="field"><label id="lblXp2" class="text-muted">Class 2 XP</label><input type="number" id="modalXp2" value="0"></div>
+                    </div>
+                </div>
+
+                <div class="sec">
+                    <div class="row-between">
+                        <div class="sec-title">Ability Scores</div>
+                        <div id="excStrContainer" class="row-center hidden">
+                            <span class="text-muted">Exceptional STR</span>
+                            <select id="modalExceptionalStr" style="width:80px;">
+                                <option value="01">01–50</option>
+                                <option value="51">51–75</option>
+                                <option value="76">76–90</option>
+                                <option value="91">91–99</option>
+                                <option value="00">00</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="grid-6">
+                        <div><span class="stat-label">STR</span><input type="number" id="modalStr" value="15" onchange="checkExceptionalStrengthVisibility()"></div>
+                        <div><span class="stat-label">DEX</span><input type="number" id="modalDex" value="14"></div>
+                        <div><span class="stat-label">CON</span><input type="number" id="modalCon" onchange="autoCalcAll2eStats(true)" value="14"></div>
+                        <div><span class="stat-label">INT</span><input type="number" id="modalInt" value="12"></div>
+                        <div><span class="stat-label">WIS</span><input type="number" id="modalWis" value="12" title="18+ Wisdom grants +10% earned XP"></div>
+                        <div><span class="stat-label">CHA</span><input type="number" id="modalCha" value="10"></div>
+                    </div>
+                </div>
+
+                <div class="sec">
+                    <div class="sec-title" style="color:var(--green);">Saving Throws</div>
+                    <div class="grid-5">
+                        <div><span class="stat-label">PPD</span><input type="number" id="modalSavePPD" value="14" style="color:var(--green); font-weight:700;"></div>
+                        <div><span class="stat-label">RSW</span><input type="number" id="modalSaveRSW" value="16" style="color:var(--green); font-weight:700;"></div>
+                        <div><span class="stat-label">PP</span><input type="number" id="modalSavePP" value="15" style="color:var(--green); font-weight:700;"></div>
+                        <div><span class="stat-label">BW</span><input type="number" id="modalSaveBW" value="17" style="color:var(--green); font-weight:700;"></div>
+                        <div><span class="stat-label">SPL</span><input type="number" id="modalSaveSPL" value="17" style="color:var(--green); font-weight:700;"></div>
+                    </div>
+                </div>
+
+                <div class="sec">
+                    <div class="sec-title">Combat Status Tags</div>
+                    <div class="chk-row">
+                        <label class="status-badge"><input type="checkbox" value="Casting ⚡" class="status-chk"> Casting ⚡</label>
+                        <label class="status-badge"><input type="checkbox" value="Blessed ✨" class="status-chk"> Blessed ✨</label>
+                        <label class="status-badge"><input type="checkbox" value="Hasted 💨" class="status-chk"> Hasted 💨</label>
+                        <label class="status-badge"><input type="checkbox" value="Paralyzed 🌀" class="status-chk"> Paralyzed 🌀</label>
+                        <label class="status-badge"><input type="checkbox" value="Blinded 👁️" class="status-chk"> Blinded 👁️</label>
+                        <label class="status-badge"><input type="checkbox" value="Prone ⬇️" class="status-chk"> Prone ⬇️</label>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <div class="row-between" style="border-top:1px solid #1f2937; padding-top:8px;">
+        <div class="modal-foot">
             <button id="modalDeleteBtn" onclick="deleteCurrentEntity()" class="btn-red hidden">🗑️ Delete</button>
             <div class="row-center" style="margin-left:auto;">
-                <button onclick="closeAddModal()" style="background:#374151;">Cancel</button>
-                <button onclick="saveEntity()" class="btn-amber">Save</button>
+                <button onclick="closeAddModal()" class="btn-gm-off">Cancel</button>
+                <button onclick="saveEntity()" class="btn-amber">💾 Save</button>
             </div>
         </div>
     </div>
@@ -428,6 +409,7 @@
     let currentRound = 1;
     let activeTurnIndex = 0;
     let expandedRows = {};
+    let collapsedGroups = {};
     let gmMode = true;
     let OBR_SDK = null;
     let buildShape = null;
@@ -1179,8 +1161,8 @@
         const filterVal = filterEl ? filterEl.value : "all";
 
         const groups = [
-            { key: 'pc', title: '🛡️ Player Characters (PCs)', color: '#fbbf24' },
-            { key: 'npc', title: '👤 Non-Player Characters (NPCs)', color: '#60a5fa' },
+            { key: 'pc', title: '🛡️ Player Characters', color: '#fbbf24' },
+            { key: 'npc', title: '👤 NPCs', color: '#60a5fa' },
             { key: 'enemy', title: '👹 Enemies & Monsters', color: '#f87171' }
         ];
 
@@ -1189,13 +1171,17 @@
             const groupEntities = entities.filter(e => e.type === g.key);
             if (groupEntities.length === 0 && filterVal === 'all') return;
 
+            const collapsed = !!collapsedGroups[g.key];
             const groupWrapper = document.createElement("div");
 
             const header = document.createElement("div");
             header.className = "group-header";
             header.style.color = g.color;
-            header.innerHTML = `<span>${g.title} (${groupEntities.length})</span><span class="text-muted">Tactical View</span>`;
+            header.onclick = () => toggleGroup(g.key);
+            header.innerHTML = `<span><span class="chev">${collapsed ? '▶' : '▼'}</span>${g.title}<span class="count">${groupEntities.length}</span></span>`;
             groupWrapper.appendChild(header);
+
+            if (collapsed) { container.appendChild(groupWrapper); return; }
 
             groupEntities.forEach(ent => {
                 const globalIdx = entities.findIndex(x => x.id === ent.id);
@@ -1204,9 +1190,11 @@
                 const isEnemy = ent.type === "enemy";
                 const isDead = ent.hp <= 0;
                 const hpPercent = Math.max(0, Math.min(100, (ent.hp / ent.maxHp) * 100));
+                const accent = g.color;
 
                 const card = document.createElement("div");
                 card.className = `card ${isTurn ? 'card-turn' : ''} ${isEnemy ? 'card-enemy' : ''} ${isDead ? 'card-dead' : ''}`;
+                card.style.setProperty("--accent", accent);
 
                 const showEnemyStats = gmMode || !isEnemy;
                 const displayThac0 = showEnemyStats ? ent.thac0 : "??";
@@ -1215,12 +1203,12 @@
                 const displayInit = ent.initiative !== undefined ? ent.initiative : '-';
 
                 let enemyHealthDesc = "Healthy";
-                if (hpPercent <= 0) enemyHealthDesc = "Dead 💀";
-                else if (hpPercent < 25) enemyHealthDesc = "Near Death 🔴";
-                else if (hpPercent < 50) enemyHealthDesc = "Wounded 🟡";
-                else if (hpPercent < 75) enemyHealthDesc = "Injured 🟠";
-
-                const displayHpValue = showEnemyStats ? `${ent.hp} / ${ent.maxHp}` : enemyHealthDesc;
+                let bandPct = 100;
+                if (hpPercent <= 0) { enemyHealthDesc = "Dead 💀"; bandPct = 0; }
+                else if (hpPercent < 25) { enemyHealthDesc = "Near Death 🔴"; bandPct = 15; }
+                else if (hpPercent < 50) { enemyHealthDesc = "Wounded 🟡"; bandPct = 40; }
+                else if (hpPercent < 75) { enemyHealthDesc = "Injured 🟠"; bandPct = 70; }
+                const fillPct = showEnemyStats ? hpPercent : bandPct;
 
                 let awardBtnText = "🎁 Award XP";
                 const hasWisBonus = (ent.wis || 10) >= 18;
@@ -1233,61 +1221,40 @@
                 const readyLvl1 = !isEnemy && (ent.xp1 || 0) >= nextXp1;
                 const readyLvl2 = !isEnemy && ent.class2 && (ent.xp2 || 0) >= nextXp2;
 
-                const statusBadgesHtml = (ent.statuses || []).map(s => `<span class="status-badge">${s}</span>`).join(" ");
+                const statusBadgesHtml = (ent.statuses || []).map(s => `<span class="status-badge">${s}</span>`).join("");
+                const initial = (ent.name || "?").trim().charAt(0).toUpperCase();
+                const subText = isEnemy
+                    ? `HD ${ent.hd || '1'} · Morale ${ent.morale || 12}`
+                    : `${ent.class1} ${ent.lvl1}${ent.class2 ? ' / ' + ent.class2 + ' ' + (ent.lvl2 || ent.lvl1) : ''}${ent.str === 18 && ent.exceptionalStr ? ' · STR 18/' + ent.exceptionalStr : ''}`;
 
                 card.innerHTML = `
-                    <div class="row-between" style="cursor:pointer;" onclick="toggleExpand('${ent.id}')">
-                        <div style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1;">
-                            <div style="font-weight:700; color:#fff; display:flex; align-items:center; gap:4px; font-size:13px;">
-                                ${isDead ? '💀 ' : ''}${ent.name} ${ent.tokenId ? '<span title="Synced to Owlbear Rodeo Map Token">🔗</span>' : ''}
-                                ${statusBadgesHtml}
-                            </div>
-                            <div class="text-muted">${isEnemy ? `HD: ${ent.hd || '1'}` : `${ent.class1} ${ent.lvl1}${ent.class2 ? ' / ' + ent.class2 + ' ' + (ent.lvl2 || ent.lvl1) : ''}${ent.str === 18 && ent.exceptionalStr ? ' (18/' + ent.exceptionalStr + ')' : ''}`}</div>
+                    <div class="card-head" onclick="toggleExpand('${ent.id}')">
+                        <div class="avatar">${isDead ? '💀' : initial}</div>
+                        <div class="who">
+                            <div class="name">${ent.name} ${ent.tokenId ? '<span title="Linked to Owlbear Rodeo map token">🔗</span>' : ''}</div>
+                            <div class="sub">${subText}</div>
+                            ${(statusBadgesHtml || isTurn) ? `<div class="tags">${isTurn ? '<span class="turn-pill">⭐ ACTIVE</span>' : ''}${statusBadgesHtml}</div>` : ''}
                         </div>
-                        <div class="row-center">
+                        <div class="actions">
                             <button onclick="event.stopPropagation(); rollAttack('${ent.id}')" title="Roll 1d20 Attack vs THAC0" class="btn-amber btn-icon">⚔️</button>
                             <button onclick="event.stopPropagation(); rollDamage('${ent.id}')" title="Roll Weapon Damage" class="btn-red btn-icon">💥</button>
-                            <button onclick="event.stopPropagation(); openEditModal('${ent.id}')" title="Edit Entity" class="btn-ghost">⚙️</button>
+                            <button onclick="event.stopPropagation(); openEditModal('${ent.id}')" title="Edit" class="btn-gm-off btn-icon">⚙️</button>
                         </div>
                     </div>
 
-                    <div class="tactical-grid">
-                        <div class="tac-badge badge-thac0" title="THAC0">
-                            <span class="tac-label">THAC0</span>
-                            <span>${displayThac0}</span>
-                        </div>
-                        <div style="text-align:center;">
-                            <span class="init-pill ${isTurn ? 'init-pill-active' : ''}" style="font-size:11px; padding:3px 8px;">
-                                ${isTurn ? '⭐ ACTIVE TURN' : `Init: #${displayInit}`}
-                            </span>
-                        </div>
-                        <div class="tac-badge badge-ac" title="Armor Class">
-                            <span class="tac-label">AC</span>
-                            <span>${displayAc}</span>
-                        </div>
+                    <div class="hp ${fillPct < 25 ? 'low' : ''}">
+                        <div class="hp-fill" style="width:${fillPct}%"></div>
+                        <span class="hp-ico">❤ HP</span>
+                        ${showEnemyStats
+                            ? `<input type="text" value="${ent.hp}/${ent.maxHp}" onchange="updateHp('${ent.id}', this.value)" title="Type -6 for damage, +4 for heal, or an exact HP">`
+                            : `<span class="hp-text">${enemyHealthDesc}</span>`}
                     </div>
 
-                    <div class="tactical-grid" style="grid-template-columns: 55px 1fr 55px;">
-                        <div class="tac-badge badge-spd" title="Weapon Speed / Cast Time">
-                            <span class="tac-label">Speed</span>
-                            <input type="number" value="${displaySpeed}" onchange="updateSpeed('${ent.id}', this.value)" class="input-spd" style="width:38px; background:transparent; border:none; color:#facc15; font-size:13px; text-align:center;">
-                        </div>
-                        <div style="text-align:center; font-size:10px; color:#9ca3af;">
-                            Tap card header to expand details
-                        </div>
-                        <div class="tac-badge badge-init" title="Combat Initiative">
-                            <span class="tac-label">Init #</span>
-                            <span>${displayInit}</span>
-                        </div>
-                    </div>
-
-                    <div class="hero-hp-bar">
-                        <span style="font-size:11px; opacity:0.9;">HP</span>
-                        ${showEnemyStats ? `
-                            <input type="text" value="${ent.hp}/${ent.maxHp}" onchange="updateHp('${ent.id}', this.value)" title="Type -6 for damage, +4 for heal, or exact HP">
-                        ` : `
-                            <span style="font-size:13px; font-weight:800;">${displayHpValue}</span>
-                        `}
+                    <div class="stats">
+                        <div class="stat s-thac0" title="THAC0"><span class="lbl">THAC0</span><span class="val">${displayThac0}</span></div>
+                        <div class="stat s-ac" title="Armor Class"><span class="lbl">AC</span><span class="val">${displayAc}</span></div>
+                        <div class="stat s-spd" title="Weapon Speed / Cast Time"><span class="lbl">Speed</span><input type="number" class="val" value="${displaySpeed}" onchange="updateSpeed('${ent.id}', this.value)"></div>
+                        <div class="stat s-init" title="Initiative (lowest acts first)"><span class="lbl">Init</span><span class="val">${displayInit}</span></div>
                     </div>
 
                     <div class="drawer ${isExpanded ? '' : 'hidden'}">
@@ -1302,16 +1269,16 @@
                             </div>
 
                             <div class="grid-5">
-                                <button onclick="rollSavingThrow('${ent.id}', 'Poison/Death', ${ent.saves?.ppd || 14})" class="roll-box"><span class="stat-label">PPD</span><span class="text-emerald">${ent.saves?.ppd || 14}</span></button>
-                                <button onclick="rollSavingThrow('${ent.id}', 'Rod/Staff/Wand', ${ent.saves?.rsw || 16})" class="roll-box"><span class="stat-label">RSW</span><span class="text-emerald">${ent.saves?.rsw || 16}</span></button>
-                                <button onclick="rollSavingThrow('${ent.id}', 'Petrify/Poly', ${ent.saves?.pp || 15})" class="roll-box"><span class="stat-label">PP</span><span class="text-emerald">${ent.saves?.pp || 15}</span></button>
-                                <button onclick="rollSavingThrow('${ent.id}', 'Breath Weapon', ${ent.saves?.bw || 17})" class="roll-box"><span class="stat-label">BW</span><span class="text-emerald">${ent.saves?.bw || 17}</span></button>
-                                <button onclick="rollSavingThrow('${ent.id}', 'Spell', ${ent.saves?.spl || 17})" class="roll-box"><span class="stat-label">SPL</span><span class="text-emerald">${ent.saves?.spl || 17}</span></button>
+                                <button onclick="rollSavingThrow('${ent.id}', 'Poison/Death', ${ent.saves?.ppd || 14})" class="roll-box" title="Paralyzation, Poison, Death Magic"><span class="stat-label">PPD</span><span class="text-emerald">${ent.saves?.ppd || 14}</span></button>
+                                <button onclick="rollSavingThrow('${ent.id}', 'Rod/Staff/Wand', ${ent.saves?.rsw || 16})" class="roll-box" title="Rod, Staff, Wand"><span class="stat-label">RSW</span><span class="text-emerald">${ent.saves?.rsw || 16}</span></button>
+                                <button onclick="rollSavingThrow('${ent.id}', 'Petrify/Poly', ${ent.saves?.pp || 15})" class="roll-box" title="Petrification, Polymorph"><span class="stat-label">PP</span><span class="text-emerald">${ent.saves?.pp || 15}</span></button>
+                                <button onclick="rollSavingThrow('${ent.id}', 'Breath Weapon', ${ent.saves?.bw || 17})" class="roll-box" title="Breath Weapon"><span class="stat-label">BW</span><span class="text-emerald">${ent.saves?.bw || 17}</span></button>
+                                <button onclick="rollSavingThrow('${ent.id}', 'Spell', ${ent.saves?.spl || 17})" class="roll-box" title="Spell"><span class="stat-label">SPL</span><span class="text-emerald">${ent.saves?.spl || 17}</span></button>
                             </div>
 
                             ${ent.type === 'pc' ? `
-                                <div class="bar-box" style="display:flex; flex-direction:column; gap:6px;">
-                                    <div class="row-between" style="flex-wrap:wrap;">
+                                <div class="bar-box" style="display:flex; flex-direction:column; gap:8px;">
+                                    <div class="row-between wrap">
                                         <span class="row-center">
                                             ${ent.class1} XP: <b class="text-amber">${ent.xp1 || 0}</b> <span class="text-muted">/ ${nextXp1}</span>
                                             ${readyLvl1 ? `<button onclick="levelUpClass('${ent.id}', 1)" class="btn-emerald">⬆️ Level Up!</button>` : ''}
@@ -1323,29 +1290,29 @@
                                             </span>
                                         ` : ''}
                                     </div>
-                                    <div class="row-between">
+                                    <div class="row-between wrap">
                                         <div class="row-center">
-                                            <input type="number" id="awardInput_${ent.id}" placeholder="Award XP..." style="width:90px;">
-                                            <button onclick="promptAwardXp('${ent.id}')" class="btn-amber" style="font-size:10px;">${awardBtnText}</button>
+                                            <input type="number" id="awardInput_${ent.id}" placeholder="XP…" style="width:80px;">
+                                            <button onclick="promptAwardXp('${ent.id}')" class="btn-amber">${awardBtnText}</button>
                                         </div>
                                         <button onclick="bindExistingEntityToMapToken('${ent.id}')" class="btn-emerald-outline">${ent.tokenId ? '🔗 Re-link' : '🔗 Link Token'}</button>
                                     </div>
                                 </div>
                             ` : `
                                 <div class="row-between">
-                                    <span class="text-muted">NPC Token Sync:</span>
+                                    <span class="text-muted">NPC Token Sync</span>
                                     <button onclick="bindExistingEntityToMapToken('${ent.id}')" class="btn-emerald-outline">${ent.tokenId ? '🔗 Re-link' : '🔗 Link Token'}</button>
                                 </div>
                             `}
                         ` : `
-                            <div class="bar-box" style="display:flex; flex-direction:column; gap:6px;">
-                                <div class="row-between">
+                            <div class="bar-box" style="display:flex; flex-direction:column; gap:8px;">
+                                <div class="row-between wrap">
                                     <span class="text-muted">Monster XP: <b class="text-amber">${ent.monsterXp || 50} XP</b></span>
-                                    <button onclick="rollMorale('${ent.id}')" class="btn-indigo" style="font-size:10px;">🎲 Roll Morale (2d10 vs ${ent.morale || 12})</button>
+                                    <button onclick="rollMorale('${ent.id}')" class="btn-indigo">🎲 Morale (2d10 ≤ ${ent.morale || 12})</button>
                                 </div>
-                                <div class="row-between">
-                                    <button onclick="bindExistingEntityToMapToken('${ent.id}')" class="btn-emerald-outline" style="font-size:10px;">${ent.tokenId ? '🔗 Linked' : '🔗 Link Token'}</button>
-                                    <button onclick="defeatMonster('${ent.id}')" ${ent.defeated ? 'disabled' : ''} class="${ent.defeated ? 'btn-gm-off' : 'btn-red'}" style="font-size:10px;">
+                                <div class="row-between wrap">
+                                    <button onclick="bindExistingEntityToMapToken('${ent.id}')" class="btn-emerald-outline">${ent.tokenId ? '🔗 Re-link' : '🔗 Link Token'}</button>
+                                    <button onclick="defeatMonster('${ent.id}')" ${ent.defeated ? 'disabled' : ''} class="${ent.defeated ? 'btn-gm-off' : 'btn-red'}">
                                         ${ent.defeated ? '✅ XP in Pool' : '💀 Defeat (To Pool)'}
                                     </button>
                                 </div>
@@ -1360,6 +1327,11 @@
 
         const xpPoolDisplay = document.getElementById("xpPoolDisplay");
         if (xpPoolDisplay) xpPoolDisplay.innerText = combatXpPool + " XP";
+    }
+
+    function toggleGroup(key) {
+        collapsedGroups[key] = !collapsedGroups[key];
+        renderRoster();
     }
 
     function toggleExpand(id) {
@@ -1770,7 +1742,7 @@
                     const dot = document.getElementById("obrStatusDot");
                     const txt = document.getElementById("obrStatusText");
                     if (dot) dot.classList.add("connected");
-                    if (txt) txt.innerText = "OBR Room Connected · v14 badges";
+                    if (txt) txt.innerText = "OBR Room Connected · v15 badges";
 
                     const role = await OBR_SDK.player.getRole();
                     setGmPermission(role === "GM");
