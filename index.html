@@ -432,6 +432,7 @@
     let OBR_SDK = null;
     let buildShape = null;
     let buildText = null;
+    let buildCurve = null;
     let isObrConnected = false;
 
     function setVal(id, val) {
@@ -662,91 +663,164 @@
         if (old.length) await OBR_SDK.scene.items.deleteItems(old.map(i => i.id));
     }
 
+    // Token bounds computed the same way the Daggerheart extension does it (token image scaled to the map grid)
+    async function getTokenBounds(token) {
+        if (token.image && token.grid) {
+            const dpi = await OBR_SDK.scene.grid.getDpi();
+            const dpiScale = dpi / token.grid.dpi;
+            const width = token.image.width * dpiScale * token.scale.x;
+            const height = token.image.height * dpiScale * token.scale.y;
+            const offsetX = (token.grid.offset.x / token.image.width) * width;
+            const offsetY = (token.grid.offset.y / token.image.height) * height;
+            return { position: { x: token.position.x - offsetX, y: token.position.y - offsetY }, width, height };
+        }
+        const bb = await OBR_SDK.scene.items.getItemBounds([token.id]);
+        return { position: { x: bb.min.x, y: bb.min.y }, width: bb.width, height: bb.height };
+    }
+
     async function doSyncTokenOnMap(ent) {
-        if (!isObrConnected || !OBR_SDK || (!buildShape || !buildText) || !ent || !ent.tokenId) return;
+        if (!isObrConnected || !OBR_SDK || !buildShape || !buildText || !buildCurve || !ent || !ent.tokenId) return;
         if (!gmMode) return; // only the GM manages badge items
 
         const tokens = await OBR_SDK.scene.items.getItems([ent.tokenId]);
         if (!tokens.length) return; // token no longer on the map
+        const token = tokens[0];
 
-        // Wipe the old "Name / HP | TH | AC" text label the previous version wrote on the token
-        await OBR_SDK.scene.items.updateItems([ent.tokenId], (items) => {
-            for (const item of items) {
-                if (item.text && item.text.plainText && /HP:\s*\d+\s*\/\s*\d+/.test(item.text.plainText)) {
-                    item.text.plainText = "";
-                }
-            }
-        });
+        // Wipe the old "Name / HP | TH | AC" text bar from earlier versions (only if it is still there)
+        const oldText = token.text && token.text.plainText;
+        if (oldText && /HP:\s*\d+\s*\/\s*\d+/.test(oldText)) {
+            await OBR_SDK.scene.items.updateItems([ent.tokenId], (items) => {
+                for (const it of items) if (it.text) it.text.plainText = "";
+            });
+        }
 
-        await doRemoveBadges(ent.tokenId);
-
-        const b = await OBR_SDK.scene.items.getItemBounds([ent.tokenId]);
-        const w = b.width, h = b.height;
-
-        // Everything is sized from the token itself, so badges scale with the map zoom
-        const sz = Math.min(w, h) * 0.24;          // square badge size
-        const gap = Math.min(w, h) * 0.04;
-        const pad = Math.min(w, h) * 0.03;
-        const left = b.min.x + pad;
-        const right = b.max.x - pad - sz;
-        const row1 = b.min.y + h * 0.06;
-        const row2 = row1 + sz + gap * 1.5;
-        const barH = sz * 0.8;
-        const barW = w - pad * 2;
-        const barX = b.min.x + pad;
-        const barY = b.max.y - barH - pad;
+        const bounds = await getTokenBounds(token);
+        const overflow = 100;
+        const height = Math.abs(Math.ceil(bounds.height / 4.85));        // HP bar / text height
+        const width = Math.abs(bounds.width);
+        const position = {
+            x: bounds.width < 0 ? bounds.position.x - width : bounds.position.x,
+            y: bounds.position.y + bounds.height - height - bounds.height / 10
+        };
+        const border = Math.floor(width / 75);
+        const shapeHeight = Math.abs(bounds.height / 2.3);
+        const shapeWidth = Math.abs(bounds.width / 3);
+        const rightX = bounds.position.x + (bounds.width < 0 ? 0 : bounds.width);
+        const baseY = position.y;
 
         const spd = ent.weaponSpeed !== undefined ? ent.weaponSpeed : 5;
         const init = ent.initiative !== undefined ? ent.initiative : "-";
         const dead = ent.hp <= 0 ? "💀 " : "";
         const isEnemy = ent.type === "enemy";
-        const hpPct = Math.max(0, Math.min(1, ent.maxHp > 0 ? ent.hp / ent.maxHp : 0));
+        const hpPct = (ent.maxHp > 0 && ent.hp > 0 && ent.hp <= ent.maxHp) ? ent.hp / ent.maxHp : (ent.hp > ent.maxHp ? 1 : 0);
+        const fillW = hpPct === 0 ? 0 : (width - border * 2) * hpPct;
 
-        let z = Date.now();
-        const meta = { [BADGE_KEY]: { tokenId: ent.tokenId } };
-        const finish = (builder) =>
-            builder.attachedTo(ent.tokenId)
-                .layer("ATTACHMENT")
+        const values = {
+            thac0: String(ent.thac0), ac: String(ent.ac),
+            spd: String(spd), init: String(init),
+            hp: `${dead}${ent.hp}/${ent.maxHp}`
+        };
+        const sig = [Math.round(width), Math.round(Math.abs(bounds.height)), isEnemy ? 1 : 0, token.layer].join("|");
+
+        // SMOOTH UPDATE: badges already exist with the same layout -> only change numbers / HP fill / visibility
+        const existing = await OBR_SDK.scene.items.getItems(
+            item => item.metadata && item.metadata[BADGE_KEY] && item.metadata[BADGE_KEY].tokenId === ent.tokenId
+        );
+        if (existing.length > 0 && existing.every(i => i.metadata[BADGE_KEY].sig === sig)) {
+            await OBR_SDK.scene.items.updateItems(existing, (items) => {
+                for (const it of items) {
+                    const slot = it.metadata[BADGE_KEY].slot;
+                    if (slot && slot.endsWith("-text")) {
+                        const key = slot.slice(0, -5);
+                        if (values[key] !== undefined && it.text.plainText !== values[key]) it.text.plainText = values[key];
+                    } else if (slot === "hp") {
+                        if (it.width !== fillW) it.width = fillW;
+                    }
+                    if (it.visible !== token.visible) it.visible = token.visible;
+                }
+            });
+            return;
+        }
+
+        // Otherwise (first time, or token resized) rebuild the badge set
+        await doRemoveBadges(ent.tokenId);
+
+        const common = (builder, slot, zOff) =>
+            builder.attachedTo(token.id)
+                .layer(token.layer)
                 .locked(true)
                 .disableHit(true)
                 .disableAttachmentBehavior(["ROTATION"])
-                .zIndex(z++)
-                .metadata(meta)
+                .visible(token.visible)
+                .zIndex(token.zIndex + zOff)
+                .name(slot)
+                .metadata({ [BADGE_KEY]: { tokenId: token.id, sig, slot } })
                 .build();
 
-        const rect = (x, y, rw, rh, fill, stroke, strokeW) =>
-            finish(buildShape().shapeType("RECTANGLE").position({ x, y })
-                .width(rw).height(rh)
-                .fillColor(fill).fillOpacity(0.95)
-                .strokeColor(stroke).strokeOpacity(1).strokeWidth(strokeW));
+        const label = (slot, text, w, x, y, size) =>
+            common(buildText().textType("PLAIN")
+                .width(w).height(height)
+                .position({ x, y })
+                .plainText(String(text))
+                .textAlign("CENTER").textAlignVertical("BOTTOM")
+                .fontWeight(600).strokeColor("black").strokeWidth(2)
+                .fontSize(size).lineHeight(1), slot, 4);
 
-        const txt = (x, y, tw, th, text, size) =>
-            finish(buildText().textType("PLAIN").plainText(String(text)).position({ x, y })
-                .width(tw).height(th)
-                .textAlign("CENTER").textAlignVertical("MIDDLE")
-                .fontSize(size).fontWeight(800)
-                .fillColor("#ffffff").fillOpacity(1)
-                .strokeColor("#000000").strokeOpacity(0).strokeWidth(0));
+        const curve = (slot, pts, color, x, y) =>
+            common(buildCurve().points(pts).tension(0)
+                .fillColor("black").fillOpacity(0.5)
+                .strokeWidth(shapeWidth / 25).strokeColor(color)
+                .position({ x, y }), slot, 2);
+
+        const DIAMOND = [
+            { x: shapeWidth / 3, y: 0 }, { x: shapeWidth / 1.5, y: shapeHeight / 3 },
+            { x: shapeWidth / 3, y: shapeHeight / 1.5 }, { x: 0, y: shapeHeight / 3 },
+            { x: shapeWidth / 3, y: 0 }
+        ];
+        const BANNER = [
+            { x: 0, y: 0 }, { x: shapeWidth / 3, y: shapeHeight / 6 }, { x: shapeWidth / 1.5, y: 0 },
+            { x: shapeWidth / 1.5, y: shapeHeight / 2 }, { x: shapeWidth / 3, y: shapeHeight / 1.5 },
+            { x: 0, y: shapeHeight / 2 }, { x: 0, y: 0 }
+        ];
 
         const items = [];
-        const stat = (x, y, value, borderColor) => {
-            items.push(rect(x, y, sz, sz, "#0b1220", borderColor, Math.max(2, sz * 0.07)));
-            items.push(txt(x, y, sz, sz, value, sz * 0.58));
-        };
 
-        // Same layout as the reference: THAC0 / AC on top, Speed / Init below, HP bar along the bottom
-        // Enemy THAC0 + AC are not drawn so players can't read them
+        // HP text (centered on the bar)
+        items.push(label("hp-text", values.hp, width + overflow,
+            bounds.width < 0 ? bounds.position.x + bounds.width - overflow / 2 : bounds.position.x - overflow / 2,
+            baseY, height));
+
+        // THAC0 = diamond (top-left) and AC = banner (top-right). Hidden for enemies so players can't read them.
         if (!isEnemy) {
-            stat(left, row1, ent.thac0, "#38bdf8");   // blue   = THAC0
-            stat(right, row1, ent.ac, "#94a3b8");     // grey   = AC
+            items.push(curve("thac0-shape", DIAMOND, "lightblue", position.x, baseY - shapeHeight / 0.75));
+            items.push(label("thac0-text", values.thac0, shapeWidth / 1.5, position.x, baseY - shapeHeight * 1.25, height - 3));
+            items.push(curve("ac-shape", BANNER, "grey", rightX - shapeWidth / 1.5, baseY - shapeHeight / 0.75));
+            items.push(label("ac-text", values.ac, shapeWidth / 1.5, rightX - shapeWidth / 1.5, baseY - shapeHeight * 1.2, height - 3));
         }
-        stat(left, row2, spd, "#facc15");             // yellow = Speed
-        stat(right, row2, init, "#4ade80");           // green  = Initiative
 
-        // HP bar: dark base + red fill that shrinks as HP drops
-        items.push(rect(barX, barY, barW, barH, "#450a0a", "#000000", Math.max(1, sz * 0.04)));
-        if (hpPct > 0) items.push(rect(barX, barY, barW * hpPct, barH, "#dc2626", "#dc2626", 0));
-        items.push(txt(barX, barY, barW, barH, `${dead}${ent.hp}/${ent.maxHp}`, barH * 0.62));
+        // Speed = hexagon (lower-left)
+        items.push(common(buildShape().shapeType("HEXAGON")
+            .fillColor("black").fillOpacity(0.5)
+            .width(shapeWidth * 0.7).height(shapeHeight * 0.7)
+            .strokeWidth(shapeWidth / 25).strokeColor("yellow")
+            .position({ x: position.x + shapeWidth * 0.34, y: baseY + height - shapeHeight * 0.77 }), "spd-shape", 2));
+        items.push(label("spd-text", values.spd, shapeWidth * 0.7, position.x, baseY + height - shapeHeight, height - 3));
+
+        // Initiative = banner (lower-right)
+        items.push(curve("init-shape", BANNER, "green", rightX - shapeWidth / 1.5, baseY - shapeHeight / 1.5));
+        items.push(label("init-text", values.init, shapeWidth * 1.5, rightX - shapeWidth * 1.1, baseY - shapeHeight / 1.85, height - 3));
+
+        // HP bar: translucent base + red fill
+        items.push(common(buildShape().shapeType("RECTANGLE")
+            .width(width).height(height)
+            .fillColor("black").fillOpacity(0.5)
+            .strokeColor("black").strokeOpacity(0)
+            .position(position), "hp-base", 1));
+        items.push(common(buildShape().shapeType("RECTANGLE")
+            .width(fillW).height(height - border * 2)
+            .fillColor("red").fillOpacity(0.5)
+            .strokeWidth(0).strokeOpacity(0)
+            .position({ x: position.x + border, y: position.y + border }), "hp", 2));
 
         await OBR_SDK.scene.items.addItems(items);
     }
@@ -1689,13 +1763,14 @@
             OBR_SDK = mod.default;
             buildShape = mod.buildShape;
             buildText = mod.buildText;
+            buildCurve = mod.buildCurve;
             if (OBR_SDK && OBR_SDK.isAvailable) {
                 OBR_SDK.onReady(async () => {
                     isObrConnected = true;
                     const dot = document.getElementById("obrStatusDot");
                     const txt = document.getElementById("obrStatusText");
                     if (dot) dot.classList.add("connected");
-                    if (txt) txt.innerText = "OBR Room Connected · v12 badges";
+                    if (txt) txt.innerText = "OBR Room Connected · v14 badges";
 
                     const role = await OBR_SDK.player.getRole();
                     setGmPermission(role === "GM");
