@@ -147,6 +147,20 @@
         .modal-box input[type="text"] { text-align: left; }
         .chk-row { display: flex; gap: 6px; flex-wrap: wrap; }
         .chk-row .status-badge { font-size: 11px; padding: 3px 7px; cursor: pointer; }
+
+        /* ---------- Token image, hidden state, log history ---------- */
+        .avatar { position: relative; cursor: pointer; background-size: cover; background-position: center; }
+        .avatar.has-img { color: transparent; }
+        .avatar .skull { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 18px; background: rgba(0,0,0,.45); border-radius: 50%; color: #fff; }
+        .avatar:hover { border-color: #fff; }
+        .card-hidden { border-style: dashed; border-color: #8b5cf6; }
+        .card-hidden .avatar { filter: grayscale(.6) brightness(.8); }
+        .hidden-pill { background: #3b0764; border: 1px solid #8b5cf6; color: #ddd6fe; font-size: 10px; font-weight: 700; border-radius: 999px; padding: 0 7px; }
+        #actionLog { cursor: pointer; }
+        #logHistory { background: var(--bg4); border: 1px solid var(--line); border-radius: 6px; max-height: 140px; overflow-y: auto; padding: 4px 8px; }
+        .log-line { padding: 3px 0; border-bottom: 1px solid rgba(255,255,255,.07); font-size: 12px; color: #d1d5db; }
+        .log-line:last-child { border-bottom: none; }
+        label.chip input { vertical-align: middle; margin-right: 3px; }
     </style>
 </head>
 <body>
@@ -174,6 +188,8 @@
             <button onclick="rollAllInitiative()" class="btn-indigo" title="Roll 1d10 + Speed Factor (Lowest acts first)">🎲 Roll Init</button>
             <button onclick="nextTurn()" class="btn-indigo-dark" title="Advance to next living combatant">⏭️ Next</button>
         </div>
+        <label class="chip" style="cursor:pointer;" title="Pan the map to each combatant when you press Next"><input type="checkbox" id="followTurn" onchange="setFollowTurn(this.checked)">📷 Follow</label>
+        <button id="revealAllBtn" onclick="revealAllHidden()" class="btn-gm-off" title="Reveal every hidden entity (and its map token) to players">👁 Reveal All</button>
         <select id="groupFilter" onchange="renderRoster()" title="Filter roster" style="width:auto; color:#fbbf24; font-weight:700;">
             <option value="all">All</option>
             <option value="pc">PCs</option>
@@ -196,7 +212,8 @@
 <main id="rosterContainer"></main>
 
 <!-- LIVE LOG / RESULT BANNER -->
-<div id="actionLog">
+<div id="logHistory" class="hidden"></div>
+<div id="actionLog" onclick="toggleLogHistory()" title="Click to show / hide recent rolls">
     <span id="actionLogText">Select a token or click any stat, save, or weapon button to roll...</span>
 </div>
 
@@ -227,6 +244,7 @@
         <div class="modal-body">
             <input type="hidden" id="editEntityId">
             <input type="hidden" id="modalTokenId">
+            <input type="hidden" id="modalImg">
 
             <div class="sec">
                 <div class="sec-title">Basics</div>
@@ -240,6 +258,7 @@
                         </select>
                     </div>
                 </div>
+                <label class="status-badge" style="font-size:12px; padding:4px 8px; width:fit-content; cursor:pointer;" title="Players will not see this entry or its map token until revealed"><input type="checkbox" id="modalHidden"> 🙈 Hidden from players</label>
                 <div class="grid-3">
                     <div class="field"><label class="text-muted">HP (cur / max)</label>
                         <div class="row-center"><input type="number" id="modalHp" value="15"><input type="number" id="modalMaxHp" value="15"></div>
@@ -410,6 +429,9 @@
     let activeTurnIndex = 0;
     let expandedRows = {};
     let collapsedGroups = {};
+    let logHistory = [];
+    let logOpen = false;
+    let followTurn = false;
     let gmMode = true;
     let OBR_SDK = null;
     let buildShape = null;
@@ -667,6 +689,8 @@
         const tokens = await OBR_SDK.scene.items.getItems([ent.tokenId]);
         if (!tokens.length) return; // token no longer on the map
         const token = tokens[0];
+        const tokImg = token.image && token.image.url;
+        if (tokImg && ent.img !== tokImg) { ent.img = tokImg; syncState(); renderRoster(); }
 
         // Wipe the old "Name / HP | TH | AC" text bar from earlier versions (only if it is still there)
         const oldText = token.text && token.text.plainText;
@@ -845,6 +869,13 @@
         }
         if (ent.tokenId && ent.tokenId !== selection[0]) await removeBadgesForToken(ent.tokenId);
         ent.tokenId = selection[0];
+        try {
+            const its = await OBR_SDK.scene.items.getItems([ent.tokenId]);
+            if (its[0]) {
+                ent.img = (its[0].image && its[0].image.url) || ent.img || "";
+                ent.hidden = !its[0].visible;
+            }
+        } catch (e) {}
         await syncTokenOnMap(ent);
         logAction(`🔗 Linked <b>${ent.name}</b> to map token and pushed tactical stats!`);
         syncState();
@@ -1035,7 +1066,7 @@
         if (!token) return;
         const rawName = token.name || (token.text && token.text.plainText) || "Linked Token";
         const cleanName = rawName.split("\n")[0].replace(/\s*\d+\/\d+$/, "").replace(/^💀\s*/, "");
-        openAddModal('pc', cleanName, token.id);
+        openAddModal('pc', cleanName, token.id, (token.image && token.image.url) || "", !token.visible);
     }
 
     function rollAllInitiative() {
@@ -1066,7 +1097,8 @@
         } while (entities[activeTurnIndex].hp <= 0 && attempts < entities.length);
 
         const activeEnt = entities[activeTurnIndex];
-        logAction(`⏭️ <b>Round ${currentRound}</b>: Now acting &rarr; <b class="text-amber">${activeEnt.name}</b> (Init #${activeEnt.initiative})`);
+        logAction(`⏭️ <b>Round ${currentRound}</b>: Now acting &rarr; <b class="text-amber">${(!gmMode && activeEnt.hidden) ? "???" : activeEnt.name}</b> (Init #${activeEnt.initiative})`);
+        if (followTurn && (gmMode || !activeEnt.hidden)) focusToken(activeEnt.id);
         if (isObrConnected && OBR_SDK && activeEnt.tokenId) {
             try { await OBR_SDK.player.select([activeEnt.tokenId]); } catch (e) {}
         }
@@ -1151,6 +1183,9 @@
         const roundBadge = document.getElementById("roundBadge");
         if (roundBadge) roundBadge.innerText = `Rd ${currentRound}`;
 
+        const revealBtn = document.getElementById("revealAllBtn");
+        if (revealBtn) revealBtn.classList.toggle("hidden", !gmMode);
+
         const clearBtn = document.getElementById("clearXpBtn");
         if (clearBtn) {
             if (gmMode && combatXpPool > 0) clearBtn.classList.remove("hidden");
@@ -1168,7 +1203,7 @@
 
         groups.forEach(g => {
             if (filterVal !== 'all' && filterVal !== g.key) return;
-            const groupEntities = entities.filter(e => e.type === g.key);
+            const groupEntities = entities.filter(e => e.type === g.key && (gmMode || !e.hidden));
             if (groupEntities.length === 0 && filterVal === 'all') return;
 
             const collapsed = !!collapsedGroups[g.key];
@@ -1193,7 +1228,7 @@
                 const accent = g.color;
 
                 const card = document.createElement("div");
-                card.className = `card ${isTurn ? 'card-turn' : ''} ${isEnemy ? 'card-enemy' : ''} ${isDead ? 'card-dead' : ''}`;
+                card.className = `card ${isTurn ? 'card-turn' : ''} ${isEnemy ? 'card-enemy' : ''} ${isDead ? 'card-dead' : ''} ${ent.hidden ? 'card-hidden' : ''}`;
                 card.style.setProperty("--accent", accent);
 
                 const showEnemyStats = gmMode || !isEnemy;
@@ -1229,13 +1264,14 @@
 
                 card.innerHTML = `
                     <div class="card-head" onclick="toggleExpand('${ent.id}')">
-                        <div class="avatar">${isDead ? '💀' : initial}</div>
+                        <div class="avatar ${ent.img ? 'has-img' : ''}" ${ent.img ? `style="background-image:url('${String(ent.img).replace(/'/g, '%27')}')"` : ''} onclick="event.stopPropagation(); focusToken('${ent.id}')" title="Click to find on the map">${ent.img ? '' : initial}${isDead ? '<span class="skull">💀</span>' : ''}</div>
                         <div class="who">
                             <div class="name">${ent.name} ${ent.tokenId ? '<span title="Linked to Owlbear Rodeo map token">🔗</span>' : ''}</div>
                             <div class="sub">${subText}</div>
-                            ${(statusBadgesHtml || isTurn) ? `<div class="tags">${isTurn ? '<span class="turn-pill">⭐ ACTIVE</span>' : ''}${statusBadgesHtml}</div>` : ''}
+                            ${(statusBadgesHtml || isTurn || (ent.hidden && gmMode)) ? `<div class="tags">${isTurn ? '<span class="turn-pill">⭐ ACTIVE</span>' : ''}${(ent.hidden && gmMode) ? '<span class="hidden-pill">🙈 HIDDEN</span>' : ''}${statusBadgesHtml}</div>` : ''}
                         </div>
                         <div class="actions">
+                            ${gmMode ? `<button onclick="event.stopPropagation(); toggleHidden('${ent.id}')" title="${ent.hidden ? 'Reveal to players' : 'Hide from players'}" class="${ent.hidden ? 'btn-indigo' : 'btn-gm-off'} btn-icon">${ent.hidden ? '🙈' : '👁'}</button>` : ''}
                             <button onclick="event.stopPropagation(); rollAttack('${ent.id}')" title="Roll 1d20 Attack vs THAC0" class="btn-amber btn-icon">⚔️</button>
                             <button onclick="event.stopPropagation(); rollDamage('${ent.id}')" title="Roll Weapon Damage" class="btn-red btn-icon">💥</button>
                             <button onclick="event.stopPropagation(); openEditModal('${ent.id}')" title="Edit" class="btn-gm-off btn-icon">⚙️</button>
@@ -1258,6 +1294,16 @@
                     </div>
 
                     <div class="drawer ${isExpanded ? '' : 'hidden'}">
+                        ${(gmMode || !isEnemy) ? `
+                            <div class="row-between wrap bar-box">
+                                <div class="row-center">
+                                    <input type="number" id="qhp_${ent.id}" placeholder="Amount" style="width:76px;">
+                                    <button onclick="applyQuickHp('${ent.id}', -1)" class="btn-red">💔 Damage</button>
+                                    <button onclick="applyQuickHp('${ent.id}', 1)" class="btn-emerald-outline">💚 Heal</button>
+                                </div>
+                                ${gmMode ? `<button onclick="duplicateEntity('${ent.id}')" class="btn-gm-off" title="Clone this entry (e.g. a second goblin)">📋 Duplicate</button>` : ''}
+                            </div>
+                        ` : ''}
                         ${!isEnemy ? `
                             <div class="grid-6">
                                 <button onclick="rollAbilityCheck('${ent.id}', 'STR', ${ent.str || 10})" class="roll-box"><span class="stat-label">STR</span><span class="text-amber">${ent.str || 10}</span></button>
@@ -1327,6 +1373,106 @@
 
         const xpPoolDisplay = document.getElementById("xpPoolDisplay");
         if (xpPoolDisplay) xpPoolDisplay.innerText = combatXpPool + " XP";
+    }
+
+async function applyTokenVisibility(ent) {
+        if (!isObrConnected || !OBR_SDK || !ent || !ent.tokenId) return;
+        try {
+            await OBR_SDK.scene.items.updateItems([ent.tokenId], (items) => {
+                for (const it of items) it.visible = !ent.hidden;
+            });
+        } catch (e) { console.warn("Visibility update failed:", e); }
+    }
+
+    async function toggleHidden(id) {
+        if (!gmMode) return;
+        const ent = entities.find(e => e.id === id);
+        if (!ent) return;
+        ent.hidden = !ent.hidden;
+        await applyTokenVisibility(ent);
+        if (ent.tokenId) await syncTokenOnMap(ent);
+        logAction(ent.hidden
+            ? `🙈 <b>${ent.name}</b> is now hidden from players.`
+            : `👁 <b>${ent.name}</b> revealed to players!`);
+        syncState();
+        renderRoster();
+    }
+
+    async function revealAllHidden() {
+        if (!gmMode) return;
+        const list = entities.filter(e => e.hidden);
+        if (list.length === 0) { logAction("👁 Nothing is hidden right now."); return; }
+        for (const ent of list) {
+            ent.hidden = false;
+            await applyTokenVisibility(ent);
+            if (ent.tokenId) await syncTokenOnMap(ent);
+        }
+        logAction(`👁 Revealed <b>${list.length}</b> hidden entr${list.length === 1 ? "y" : "ies"} to players!`);
+        syncState();
+        renderRoster();
+    }
+
+    function applyQuickHp(id, sign) {
+        const ent = entities.find(e => e.id === id);
+        const el = document.getElementById(`qhp_${id}`);
+        if (!ent || !el) return;
+        const amt = parseInt(el.value, 10);
+        if (isNaN(amt) || amt <= 0) return;
+        logAction(sign < 0
+            ? `💔 <b>${ent.name}</b> takes <b class="text-red">${amt}</b> damage.`
+            : `💚 <b>${ent.name}</b> heals <b class="text-emerald">${amt}</b> HP.`);
+        updateHp(id, (sign < 0 ? "-" : "+") + amt);
+    }
+
+    function duplicateEntity(id) {
+        if (!gmMode) return;
+        const i = entities.findIndex(e => e.id === id);
+        if (i < 0) return;
+        const src = entities[i];
+        const copy = JSON.parse(JSON.stringify(src));
+        copy.id = "ent_" + Date.now() + "_" + Math.floor(Math.random() * 1000);
+        copy.tokenId = "";
+        copy.hp = copy.maxHp;
+        copy.defeated = false;
+        const m = String(src.name).match(/^(.*?)(?:\s+(\d+))?$/);
+        const base = m[1];
+        const names = new Set(entities.map(e => e.name));
+        let n = m[2] ? parseInt(m[2], 10) + 1 : 2;
+        while (names.has(`${base} ${n}`)) n++;
+        copy.name = `${base} ${n}`;
+        entities.splice(i + 1, 0, copy);
+        if (i < activeTurnIndex) activeTurnIndex++;
+        logAction(`📋 Duplicated <b>${src.name}</b> as <b>${copy.name}</b>. Link it to a map token to show its badges.`);
+        syncState();
+        renderRoster();
+    }
+
+    async function focusToken(id) {
+        const ent = entities.find(e => e.id === id);
+        if (!ent) return;
+        if (!isObrConnected || !OBR_SDK || !ent.tokenId) {
+            logAction("ℹ️ Link this entry to a map token to jump to it.");
+            return;
+        }
+        try {
+            const items = await OBR_SDK.scene.items.getItems([ent.tokenId]);
+            if (!items.length) { logAction("⚠️ That token is no longer on the map."); return; }
+            const b = await OBR_SDK.scene.items.getItemBounds([ent.tokenId]);
+            const pad = Math.max(b.width, b.height) * 2;
+            try { await OBR_SDK.player.select([ent.tokenId]); } catch (e) {}
+            await OBR_SDK.viewport.animateToBounds({
+                min: { x: b.min.x - pad, y: b.min.y - pad },
+                max: { x: b.max.x + pad, y: b.max.y + pad },
+                width: b.width + pad * 2,
+                height: b.height + pad * 2,
+                center: b.center
+            });
+        } catch (e) { console.warn("Focus failed:", e); }
+    }
+
+    function setFollowTurn(v) {
+        followTurn = !!v;
+        try { localStorage.setItem("add2e_follow", followTurn ? "1" : "0"); } catch (e) {}
     }
 
     function toggleGroup(key) {
@@ -1435,11 +1581,31 @@
     function logAction(msg) {
         const logEl = document.getElementById("actionLogText");
         if (logEl) logEl.innerHTML = msg;
+        logHistory.push(msg);
+        if (logHistory.length > 40) logHistory.shift();
+        if (logOpen) renderLogHistory();
     }
 
-    function openAddModal(type, presetName = "", tokenId = "") {
+    function toggleLogHistory() {
+        logOpen = !logOpen;
+        renderLogHistory();
+    }
+
+    function renderLogHistory() {
+        const el = document.getElementById("logHistory");
+        if (!el) return;
+        el.classList.toggle("hidden", !logOpen);
+        if (logOpen) {
+            el.innerHTML = logHistory.slice().reverse().map(m => `<div class="log-line">${m}</div>`).join("") || `<div class="log-line">No rolls yet.</div>`;
+        }
+    }
+
+    function openAddModal(type, presetName = "", tokenId = "", img = "", hiddenPreset = undefined) {
         setVal("editEntityId", "");
         setVal("modalTokenId", tokenId);
+        setVal("modalImg", img);
+        const hiddenChk = document.getElementById("modalHidden");
+        if (hiddenChk) hiddenChk.checked = hiddenPreset !== undefined ? !!hiddenPreset : type === 'enemy';
         const titleEl = document.getElementById("modalTitle");
         if (titleEl) titleEl.innerText = type === 'pc' ? "Add Player Character" : type === 'npc' ? "Add NPC" : "Add Enemy / Monster";
         setVal("modalType", type);
@@ -1489,6 +1655,9 @@
         if (!ent) return;
         setVal("editEntityId", ent.id);
         setVal("modalTokenId", ent.tokenId || "");
+        setVal("modalImg", ent.img || "");
+        const hiddenChkEdit = document.getElementById("modalHidden");
+        if (hiddenChkEdit) hiddenChkEdit.checked = !!ent.hidden;
         const titleEl = document.getElementById("modalTitle");
         if (titleEl) titleEl.innerText = "Edit " + ent.name;
         setVal("modalType", ent.type);
@@ -1571,7 +1740,7 @@
         }
     }
 
-    function saveEntity() {
+    async function saveEntity() {
         const editIdEl = document.getElementById("editEntityId");
         const tokenIdEl = document.getElementById("modalTokenId");
         const typeEl = document.getElementById("modalType");
@@ -1587,6 +1756,9 @@
 
         const id = editIdEl ? editIdEl.value : "";
         const tokenId = tokenIdEl ? tokenIdEl.value : "";
+        const img = document.getElementById("modalImg") ? document.getElementById("modalImg").value : "";
+        const hidden = !!(document.getElementById("modalHidden") && document.getElementById("modalHidden").checked);
+        let hiddenChanged = false;
         const type = typeEl ? typeEl.value : "pc";
         const name = nameEl && nameEl.value ? nameEl.value : "Unknown";
         const maxHp = Math.max(1, parseInt(maxHpEl ? maxHpEl.value : "10", 10) || 10);
@@ -1618,7 +1790,8 @@
         if (id) {
             const ent = entities.find(e => e.id === id);
             if (ent) {
-                Object.assign(ent, { name, type, hp, maxHp, thac0, ac, weaponDice, toHitMod, dmgMod, weaponSpeed, tokenId, statuses: selectedStatuses });
+                hiddenChanged = !!ent.hidden !== hidden;
+                Object.assign(ent, { name, type, hp, maxHp, thac0, ac, weaponDice, toHitMod, dmgMod, weaponSpeed, tokenId, hidden, img: img || ent.img || "", statuses: selectedStatuses });
                 if (ent.initRoll !== undefined) ent.initiative = ent.initRoll + weaponSpeed;
                 if (type !== 'enemy') {
                     ent.class1 = document.getElementById("modalClass1")?.value || "Fighter";
@@ -1644,7 +1817,7 @@
             }
         } else {
             const newEnt = {
-                id: "ent_" + Date.now(), tokenId,
+                id: "ent_" + Date.now(), tokenId, img, hidden,
                 name, type, hp, maxHp, thac0, ac, weaponDice, toHitMod, dmgMod, weaponSpeed,
                 initRoll: 5, initiative: 5 + weaponSpeed, defeated: hp === 0, statuses: selectedStatuses
             };
@@ -1670,9 +1843,13 @@
             }
             entities.push(newEnt);
             targetEnt = newEnt;
+            hiddenChanged = !!tokenId;
         }
         closeAddModal();
-        if (targetEnt && targetEnt.tokenId) syncTokenOnMap(targetEnt);
+        if (targetEnt && targetEnt.tokenId) {
+            if (hiddenChanged) await applyTokenVisibility(targetEnt);
+            syncTokenOnMap(targetEnt);
+        }
         syncState();
         renderRoster();
     }
@@ -1726,6 +1903,11 @@
         reader.readAsText(file);
     }
 
+    try {
+        followTurn = localStorage.getItem("add2e_follow") === "1";
+        const ft = document.getElementById("followTurn");
+        if (ft) ft.checked = followTurn;
+    } catch (e) {}
     loadLocalState();
     renderRoster();
 
@@ -1742,7 +1924,7 @@
                     const dot = document.getElementById("obrStatusDot");
                     const txt = document.getElementById("obrStatusText");
                     if (dot) dot.classList.add("connected");
-                    if (txt) txt.innerText = "OBR Room Connected · v15 badges";
+                    if (txt) txt.innerText = "OBR Room Connected · v16 badges";
 
                     const role = await OBR_SDK.player.getRole();
                     setGmPermission(role === "GM");
@@ -1769,6 +1951,23 @@
                         }
                     });
 
+                    // Keep roster "hidden" state in step when the GM hides/shows a token with Owlbear's own controls
+                    OBR_SDK.scene.items.onChange((sceneItems) => {
+                        if (!gmMode) return;
+                        let changed = false;
+                        for (const ent of entities) {
+                            if (!ent.tokenId) continue;
+                            const it = sceneItems.find(i => i.id === ent.tokenId);
+                            if (!it) continue;
+                            if (!!ent.hidden !== !it.visible) {
+                                ent.hidden = !it.visible;
+                                changed = true;
+                                syncTokenOnMap(ent);
+                            }
+                        }
+                        if (changed) { syncState(); renderRoster(); }
+                    });
+
                     OBR_SDK.contextMenu.create({
                         id: "com.add2e.grimoire/context-add",
                         icons: [{
@@ -1781,7 +1980,7 @@
                             if (!item) return;
                             const rawName = item.name || (item.text && item.text.plainText) || "Map Token";
                             const cleanName = rawName.split("\n")[0].replace(/\s*\d+\/\d+$/, "").replace(/^💀\s*/, "");
-                            openAddModal('enemy', cleanName, item.id);
+                            openAddModal('enemy', cleanName, item.id, (item.image && item.image.url) || "", !item.visible);
                         }
                     });
                 });
