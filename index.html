@@ -162,6 +162,24 @@
         .log-line:last-child { border-bottom: none; }
         label.chip input { vertical-align: middle; margin-right: 3px; }
         body.player-view .gm-only { display: none !important; }
+
+        /* ---------- Turn strip, target, pending hit, owner ---------- */
+        .turn-strip { display: flex; align-items: center; gap: 8px; overflow-x: auto; padding: 4px 2px 6px; border-bottom: 1px solid var(--line); }
+        .ts-round { flex: none; font-size: 10px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+        .ts-item { flex: none; display: flex; flex-direction: column; align-items: center; gap: 2px; cursor: pointer; min-width: 34px; }
+        .ts-av { width: 30px; height: 30px; border-radius: 50%; background-color: var(--accent, #9ca3af); background-size: cover; background-position: center; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 13px; color: #111; border: 2px solid rgba(255,255,255,.3); }
+        .ts-item.hid .ts-av { border-style: dashed; border-color: #8b5cf6; filter: grayscale(.5); }
+        .ts-item.active .ts-av { border-color: #facc15; box-shadow: 0 0 0 2px rgba(250,204,21,.45); transform: scale(1.15); }
+        .ts-init { font-size: 10px; font-weight: 700; color: var(--muted); }
+        .ts-item.active .ts-init { color: #fde68a; }
+        .card-target { outline: 2px solid #ef4444; outline-offset: -2px; }
+        .card-mine { border-color: #22c55e; }
+        #targetChip { background: #450a0a; border-color: #ef4444; color: #fecaca; }
+        .pending { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; background: #422006; border: 1px solid #d97706; border-radius: 6px; padding: 6px 10px; }
+        .you-pill { background: #14532d; border: 1px solid #22c55e; color: #bbf7d0; font-size: 10px; font-weight: 700; border-radius: 999px; padding: 0 7px; }
+        .status-badge .x { cursor: pointer; opacity: .7; margin-left: 2px; }
+        .status-badge .x:hover { opacity: 1; color: #fff; }
+        .note { background: var(--bg2); border: 1px dashed var(--line); border-radius: 8px; padding: 10px; color: var(--muted); font-size: 12px; text-align: center; }
     </style>
 </head>
 <body>
@@ -188,8 +206,11 @@
         <div class="seg gm-only">
             <button onclick="rollAllInitiative()" class="btn-indigo" title="Roll 1d10 + Speed Factor (Lowest acts first)">🎲 Roll Init</button>
             <button onclick="nextTurn()" class="btn-indigo-dark" title="Advance to next living combatant">⏭️ Next</button>
+            <button id="undoBtn" onclick="undoLast()" class="btn-gm-off" title="Undo the last HP change" disabled>↩ Undo</button>
         </div>
         <label class="chip gm-only" style="cursor:pointer;" title="Pan the map to each combatant when you press Next"><input type="checkbox" id="followTurn" onchange="setFollowTurn(this.checked)">📷 Follow</label>
+        <label class="chip gm-only" style="cursor:pointer;" title="Apply hit damage to the target right away"><input type="checkbox" id="autoApply" onchange="setAutoApply(this.checked)">⚡ Auto-apply</label>
+        <span id="targetChip" class="chip gm-only hidden" onclick="clearTarget()" title="Click to clear the target">🎯 <span id="targetName"></span> ✕</span>
         <button id="revealAllBtn" onclick="revealAllHidden()" class="btn-gm-off gm-only" title="Reveal every hidden entity (and its map token) to players">👁 Reveal All</button>
         <select id="groupFilter" onchange="renderRoster()" title="Filter roster" style="width:auto; color:#fbbf24; font-weight:700;">
             <option value="all">All</option>
@@ -209,10 +230,13 @@
     </div>
 </header>
 
+<div id="turnStrip" class="turn-strip"></div>
+
 <!-- ROSTER CONTAINER -->
 <main id="rosterContainer"></main>
 
 <!-- LIVE LOG / RESULT BANNER -->
+<div id="pendingBar" class="pending hidden gm-only"></div>
 <div id="logHistory" class="hidden"></div>
 <div id="actionLog" onclick="toggleLogHistory()" title="Click to show / hide recent rolls">
     <span id="actionLogText">Select a token or click any stat, save, or weapon button to roll...</span>
@@ -361,14 +385,7 @@
 
                 <div class="sec">
                     <div class="sec-title">Combat Status Tags</div>
-                    <div class="chk-row">
-                        <label class="status-badge"><input type="checkbox" value="Casting ⚡" class="status-chk"> Casting ⚡</label>
-                        <label class="status-badge"><input type="checkbox" value="Blessed ✨" class="status-chk"> Blessed ✨</label>
-                        <label class="status-badge"><input type="checkbox" value="Hasted 💨" class="status-chk"> Hasted 💨</label>
-                        <label class="status-badge"><input type="checkbox" value="Paralyzed 🌀" class="status-chk"> Paralyzed 🌀</label>
-                        <label class="status-badge"><input type="checkbox" value="Blinded 👁️" class="status-chk"> Blinded 👁️</label>
-                        <label class="status-badge"><input type="checkbox" value="Prone ⬇️" class="status-chk"> Prone ⬇️</label>
-                    </div>
+                    <div class="chk-row" id="statusChecks"></div>
                 </div>
             </div>
         </div>
@@ -433,6 +450,14 @@
     let logHistory = [];
     let logOpen = false;
     let followTurn = false;
+    let myPlayerId = "";
+    let partyPlayers = [];
+    let currentTargetId = "";
+    let undoStack = [];
+    let pendingHit = null;
+    let autoApply = false;
+    let lastWrittenJson = "";
+    let saveWarned = false;
     let gmMode = (window.self === window.top); // inside Owlbear (iframe) start as player until the role is known
     let OBR_SDK = null;
     let buildShape = null;
@@ -1009,8 +1034,15 @@
         } catch (e) {}
         if (isObrConnected && OBR_SDK && gmMode) {
             try {
+                lastWrittenJson = JSON.stringify(payload);
                 await OBR_SDK.room.setMetadata({ [META_KEY]: payload });
-            } catch (e) {}
+                saveWarned = false;
+            } catch (e) {
+                if (!saveWarned) {
+                    saveWarned = true;
+                    logAction("⚠️ Could not save to the room: " + esc(e && e.message ? e.message : e));
+                }
+            }
         }
     }
 
@@ -1040,6 +1072,36 @@
             return;
         }
         setGmPermission(!gmMode);
+    }
+
+const STATUS_LIST = ["Casting ⚡", "Blessed ✨", "Hasted 💨", "Slowed 🐌", "Paralyzed 🌀", "Blinded 👁️", "Stunned 💫", "Held 🔒", "Poisoned ☠️", "Burning 🔥", "Charmed 💖", "Prone ⬇️"];
+
+    function esc(v) {
+        return String(v == null ? "" : v).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+    }
+    function cleanName(v) {
+        return String(v == null ? "" : v).replace(/[<>&"'`]/g, "").trim().slice(0, 60);
+    }
+    function safeUrl(u) {
+        return String(u).replace(/['"<>()\s\\]/g, c => "%" + c.charCodeAt(0).toString(16).toUpperCase().padStart(2, "0"));
+    }
+    function signed(n) { return n >= 0 ? "+" + n : String(n); }
+
+    function buildStatusChecks() {
+        const el = document.getElementById("statusChecks");
+        if (!el) return;
+        el.innerHTML = STATUS_LIST.map(st => `<label class="status-badge"><input type="checkbox" value="${st}" class="status-chk"> ${st}</label>`).join("");
+    }
+
+    function isMineEnt(e) {
+        return !gmMode && !!e && e.type === "pc" && !!e.ownerId && e.ownerId === myPlayerId;
+    }
+    function canActOn(id) {
+        if (gmMode) return true;
+        const ent = entities.find(e => e.id === id);
+        if (ent && isMineEnt(ent)) return true;
+        logAction("🔒 You can only roll for your own character.");
+        return false;
     }
 
     function gmOnly() {
@@ -1103,6 +1165,7 @@
     async function nextTurn() {
         if (!gmOnly()) return;
         if (entities.length === 0) return;
+        const roundBefore = currentRound;
         let attempts = 0;
         do {
             activeTurnIndex++;
@@ -1113,9 +1176,12 @@
             attempts++;
         } while (entities[activeTurnIndex].hp <= 0 && attempts < entities.length);
 
+        const expired = currentRound !== roundBefore ? tickConditions() : [];
         const activeEnt = entities[activeTurnIndex];
-        logAction(`⏭️ <b>Round ${currentRound}</b>: Now acting &rarr; <b class="text-amber">${(!gmMode && activeEnt.hidden) ? "???" : activeEnt.name}</b> (Init #${activeEnt.initiative})`);
-        if (followTurn && (gmMode || !activeEnt.hidden)) focusToken(activeEnt.id);
+        let msg = `⏭️ <b>Round ${currentRound}</b>: Now acting &rarr; <b class="text-amber">${activeEnt.name}</b> (Init #${activeEnt.initiative})`;
+        if (expired.length) msg += `<br>⏳ Ended: ${expired.join(", ")}`;
+        logAction(msg);
+        if (followTurn) focusToken(activeEnt.id);
         if (isObrConnected && OBR_SDK && activeEnt.tokenId) {
             try { await OBR_SDK.player.select([activeEnt.tokenId]); } catch (e) {}
         }
@@ -1137,6 +1203,7 @@
     }
 
     function rollAbilityCheck(id, statName, score) {
+        if (!canActOn(id)) return;
         const ent = entities.find(e => e.id === id);
         if (!ent) return;
         const roll = Math.floor(Math.random() * 20) + 1;
@@ -1146,6 +1213,7 @@
     }
 
     function rollSavingThrow(id, saveLabel, target) {
+        if (!canActOn(id)) return;
         const ent = entities.find(e => e.id === id);
         if (!ent) return;
         const roll = Math.floor(Math.random() * 20) + 1;
@@ -1154,44 +1222,120 @@
         logAction(`🛡️ <b>${ent.name}</b> Save vs. ${saveLabel}: rolled <b>${roll}</b> (Needs &ge; ${target}) &rarr; ${badge}`);
     }
 
+    // "2d6", "1d8+1" and "1d4-1" are all understood; the +Dmg Mod field is added on top
+    function parseDice(str) {
+        const m = String(str || "1d6").toLowerCase().replace(/\s+/g, "").match(/^(\d*)d(\d+)([+-]\d+)?$/);
+        if (!m) return { n: 1, sides: 6, bonus: 0 };
+        return {
+            n: Math.min(parseInt(m[1] || "1", 10) || 1, 50),
+            sides: Math.max(1, parseInt(m[2], 10) || 6),
+            bonus: parseInt(m[3] || "0", 10)
+        };
+    }
+
+    function rollWeaponDamage(ent) {
+        const d = parseDice(ent.weaponDice);
+        const rolls = [];
+        let sum = 0;
+        for (let i = 0; i < d.n; i++) {
+            const r = Math.floor(Math.random() * d.sides) + 1;
+            rolls.push(r);
+            sum += r;
+        }
+        const mod = (ent.dmgMod || 0) + d.bonus;
+        return { total: Math.max(1, sum + mod), rolls, mod, diceStr: `${d.n}d${d.sides}` };
+    }
+
+    function currentTarget(attackerId) {
+        if (!gmMode || !currentTargetId || currentTargetId === attackerId) return null;
+        return entities.find(e => e.id === currentTargetId) || null;
+    }
+
     function rollAttack(id) {
+        if (!canActOn(id)) return;
         const ent = entities.find(e => e.id === id);
         if (!ent) return;
         const roll = Math.floor(Math.random() * 20) + 1;
         const toHitMod = ent.toHitMod || 0;
         const adjustedRoll = roll + toHitMod;
+
+        const target = currentTarget(id);
+        if (target) { resolveAttack(ent, target, roll, toHitMod, adjustedRoll); return; }
+
         const acHit = ent.thac0 - adjustedRoll;
-
         let rollDetails = `⚔️ <b>${ent.name}</b> rolls <b>${roll}</b>`;
-        if (toHitMod !== 0) rollDetails += ` (${toHitMod >= 0 ? '+' + toHitMod : toHitMod} = <b>${adjustedRoll}</b>)`;
+        if (toHitMod !== 0) rollDetails += ` (${signed(toHitMod)} = <b>${adjustedRoll}</b>)`;
         rollDetails += ` vs THAC0 ${ent.thac0}`;
-
         if (roll === 20) rollDetails += ` ✨ <span class="text-amber">CRIT!</span>`;
         if (roll === 1) rollDetails += ` 💥 <span class="text-red">MISS!</span>`;
         rollDetails += ` &rarr; Hits <b>AC ${acHit}</b> or worse!`;
         logAction(rollDetails);
     }
 
+    // Natural 20 always hits, natural 1 always misses, otherwise roll + hit mod must reach THAC0 - target AC
+    function resolveAttack(ent, target, roll, toHitMod, adjustedRoll) {
+        const needed = ent.thac0 - target.ac;
+        const hit = roll === 20 || (roll !== 1 && adjustedRoll >= needed);
+        let msg = `⚔️ <b>${ent.name}</b> &rarr; <b>${target.name}</b> (AC ${target.ac}): rolled <b>${roll}</b>`;
+        if (toHitMod !== 0) msg += ` (${signed(toHitMod)} = <b>${adjustedRoll}</b>)`;
+        msg += `, needs <b>${needed}</b>`;
+        if (!hit) {
+            pendingHit = null;
+            renderPending();
+            logAction(msg + ` &rarr; <span class="text-red">MISS${roll === 1 ? " (natural 1)" : ""}</span>`);
+            return;
+        }
+        const r = rollWeaponDamage(ent);
+        msg += ` &rarr; <span class="text-emerald">HIT${roll === 20 ? " (natural 20)" : ""}</span> for <b class="text-red">${r.total}</b> (${r.diceStr} [${r.rolls.join(", ")}] ${signed(r.mod)})`;
+        offerDamage(ent, target, r.total, msg);
+    }
+
+    function offerDamage(att, target, amount, msg) {
+        if (autoApply) {
+            pendingHit = null;
+            updateHp(target.id, "-" + amount);
+            logAction(msg + ` &rarr; <b>${target.name}</b> ${target.hp}/${target.maxHp}${target.hp <= 0 ? " 💀" : ""}`);
+            return;
+        }
+        pendingHit = { attackerName: att.name, targetId: target.id, amount };
+        logAction(msg + " &mdash; apply it below.");
+        renderPending();
+    }
+
     function rollDamage(id) {
+        if (!canActOn(id)) return;
         const ent = entities.find(e => e.id === id);
         if (!ent) return;
-        const diceStr = ent.weaponDice || "1d6";
-        const mod = ent.dmgMod || 0;
-        const parts = diceStr.toLowerCase().split('d');
-        const numDice = parseInt(parts[0], 10) || 1;
-        const dieSides = parseInt(parts[1], 10) || 6;
+        const r = rollWeaponDamage(ent);
+        const base = `💥 <b>${ent.name}</b> deals <span class="text-red">${r.total} damage</span> (${r.diceStr} [${r.rolls.join(", ")}] ${signed(r.mod)})`;
+        const target = currentTarget(id);
+        if (target) { offerDamage(ent, target, r.total, base + ` to <b>${target.name}</b>`); return; }
+        logAction(base + ".");
+    }
 
-        let totalRoll = 0;
-        let rolls = [];
-        for (let i = 0; i < numDice; i++) {
-            const r = Math.floor(Math.random() * dieSides) + 1;
-            rolls.push(r);
-            totalRoll += r;
-        }
+    function renderPending() {
+        const el = document.getElementById("pendingBar");
+        if (!el) return;
+        if (!gmMode || !pendingHit) { el.classList.add("hidden"); el.innerHTML = ""; return; }
+        const t = entities.find(e => e.id === pendingHit.targetId);
+        el.classList.remove("hidden");
+        el.innerHTML = `<span>💔 Apply <b>${pendingHit.amount}</b> damage to <b>${t ? t.name : "?"}</b>?</span>` +
+            `<span class="row-center"><button class="btn-red" onclick="applyPending()">Apply</button><button class="btn-gm-off" onclick="dismissPending()">Dismiss</button></span>`;
+    }
 
-        const finalDmg = Math.max(1, totalRoll + mod);
-        const signMod = mod >= 0 ? `+${mod}` : `${mod}`;
-        logAction(`💥 <b>${ent.name}</b> deals <span class="text-red">${finalDmg} damage</span> (${diceStr} [${rolls.join(', ')}] ${signMod}).`);
+    function applyPending() {
+        if (!gmOnly() || !pendingHit) return;
+        const p = pendingHit;
+        pendingHit = null;
+        const t = entities.find(e => e.id === p.targetId);
+        if (!t) { renderPending(); return; }
+        updateHp(t.id, "-" + p.amount);
+        logAction(`💔 <b>${t.name}</b> takes <b class="text-red">${p.amount}</b> damage from ${p.attackerName} &rarr; ${t.hp}/${t.maxHp}${t.hp <= 0 ? " 💀" : ""}`);
+    }
+
+    function dismissPending() {
+        pendingHit = null;
+        renderPending();
     }
 
     function renderRoster() {
@@ -1213,6 +1357,13 @@
         const filterEl = document.getElementById("groupFilter");
         const filterVal = filterEl ? filterEl.value : "all";
 
+        if (!gmMode && myPlayerId && !entities.some(e => isMineEnt(e))) {
+            const note = document.createElement("div");
+            note.className = "note";
+            note.textContent = "👤 No character is linked to you yet. Ask the GM to assign one.";
+            container.appendChild(note);
+        }
+
         const groups = [
             { key: 'pc', title: '🛡️ Player Characters', color: '#fbbf24' },
             { key: 'npc', title: '👤 NPCs', color: '#60a5fa' },
@@ -1222,6 +1373,7 @@
         groups.forEach(g => {
             if (filterVal !== 'all' && filterVal !== g.key) return;
             const groupEntities = entities.filter(e => e.type === g.key && (gmMode || !e.hidden));
+            if (!gmMode) groupEntities.sort((x, y) => (isMineEnt(y) ? 1 : 0) - (isMineEnt(x) ? 1 : 0));
             if (groupEntities.length === 0 && filterVal === 'all') return;
 
             const collapsed = !!collapsedGroups[g.key];
@@ -1244,10 +1396,12 @@
                 const isDead = ent.hp <= 0;
                 const hpPercent = Math.max(0, Math.min(100, (ent.hp / ent.maxHp) * 100));
                 const accent = g.color;
-                const rollCls = (gmMode || ent.type === 'pc') ? '' : 'hidden';
+                const isMine = isMineEnt(ent);
+                const canAct = gmMode || isMine;
+                const rollCls = canAct ? '' : 'hidden';
 
                 const card = document.createElement("div");
-                card.className = `card ${isTurn ? 'card-turn' : ''} ${isEnemy ? 'card-enemy' : ''} ${isDead ? 'card-dead' : ''} ${ent.hidden ? 'card-hidden' : ''}`;
+                card.className = `card ${isTurn ? 'card-turn' : ''} ${isEnemy ? 'card-enemy' : ''} ${isDead ? 'card-dead' : ''} ${ent.hidden ? 'card-hidden' : ''} ${(gmMode && ent.id === currentTargetId) ? 'card-target' : ''} ${isMine ? 'card-mine' : ''}`;
                 card.style.setProperty("--accent", accent);
 
                 const showEnemyStats = gmMode || !isEnemy;
@@ -1276,21 +1430,25 @@
                 const readyLvl1 = !isEnemy && (ent.xp1 || 0) >= nextXp1;
                 const readyLvl2 = !isEnemy && ent.class2 && (ent.xp2 || 0) >= nextXp2;
 
-                const statusBadgesHtml = (ent.statuses || []).map(s => `<span class="status-badge">${s}</span>`).join("");
+                const statusBadgesHtml = (ent.statuses || []).map((st, si) => {
+                    const left = ent.timers && ent.timers[st];
+                    return `<span class="status-badge">${esc(st)}${left ? ` · ${left}` : ''}${gmMode ? `<span class="x" onclick="event.stopPropagation(); removeStatusAt('${ent.id}', ${si})" title="Remove">✕</span>` : ''}</span>`;
+                }).join("");
                 const initial = (ent.name || "?").trim().charAt(0).toUpperCase();
                 const subText = isEnemy
                     ? `HD ${ent.hd || '1'} · Morale ${ent.morale || 12}`
-                    : `${ent.class1} ${ent.lvl1}${ent.class2 ? ' / ' + ent.class2 + ' ' + (ent.lvl2 || ent.lvl1) : ''}${ent.str === 18 && ent.exceptionalStr ? ' · STR 18/' + ent.exceptionalStr : ''}`;
+                    : `${ent.class1} ${ent.lvl1}${ent.class2 ? ' / ' + ent.class2 + ' ' + (ent.lvl2 || ent.lvl1) : ''}${ent.str === 18 && ent.exceptionalStr ? ' · STR 18/' + ent.exceptionalStr : ''}${(ent.type === 'pc' && ent.ownerName) ? ' · 👤 ' + esc(ent.ownerName) : ''}`;
 
                 card.innerHTML = `
                     <div class="card-head" onclick="toggleExpand('${ent.id}')">
-                        <div class="avatar ${ent.img ? 'has-img' : ''}" ${ent.img ? `style="background-image:url('${String(ent.img).replace(/'/g, '%27')}')"` : ''} onclick="event.stopPropagation(); focusToken('${ent.id}')" title="Click to find on the map">${ent.img ? '' : initial}${isDead ? '<span class="skull">💀</span>' : ''}</div>
+                        <div class="avatar ${ent.img ? 'has-img' : ''}" ${ent.img ? `style="background-image:url('${safeUrl(ent.img)}')"` : ''} onclick="event.stopPropagation(); focusToken('${ent.id}')" title="Click to find on the map">${ent.img ? '' : initial}${isDead ? '<span class="skull">💀</span>' : ''}</div>
                         <div class="who">
                             <div class="name">${ent.name} ${ent.tokenId ? '<span title="Linked to Owlbear Rodeo map token">🔗</span>' : ''}</div>
                             <div class="sub">${subText}</div>
-                            ${(statusBadgesHtml || isTurn || (ent.hidden && gmMode)) ? `<div class="tags">${isTurn ? '<span class="turn-pill">⭐ ACTIVE</span>' : ''}${(ent.hidden && gmMode) ? '<span class="hidden-pill">🙈 HIDDEN</span>' : ''}${statusBadgesHtml}</div>` : ''}
+                            ${(statusBadgesHtml || isTurn || isMine || (ent.hidden && gmMode)) ? `<div class="tags">${isMine ? '<span class="you-pill">★ YOU</span>' : ''}${isTurn ? '<span class="turn-pill">⭐ ACTIVE</span>' : ''}${(ent.hidden && gmMode) ? '<span class="hidden-pill">🙈 HIDDEN</span>' : ''}${statusBadgesHtml}</div>` : ''}
                         </div>
                         <div class="actions">
+                            ${gmMode ? `<button onclick="event.stopPropagation(); toggleTarget('${ent.id}')" title="Set / clear as attack target" class="${ent.id === currentTargetId ? 'btn-red' : 'btn-gm-off'} btn-icon">🎯</button>` : ''}
                             ${gmMode ? `<button onclick="event.stopPropagation(); toggleHidden('${ent.id}')" title="${ent.hidden ? 'Reveal to players' : 'Hide from players'}" class="${ent.hidden ? 'btn-indigo' : 'btn-gm-off'} btn-icon">${ent.hidden ? '🙈' : '👁'}</button>` : ''}
                             <button onclick="event.stopPropagation(); rollAttack('${ent.id}')" title="Roll 1d20 Attack vs THAC0" class="btn-amber btn-icon ${rollCls}">⚔️</button>
                             <button onclick="event.stopPropagation(); rollDamage('${ent.id}')" title="Roll Weapon Damage" class="btn-red btn-icon ${rollCls}">💥</button>
@@ -1313,7 +1471,7 @@
                         <div class="stat s-init" title="Initiative (lowest acts first)"><span class="lbl">Init</span><span class="val">${displayInit}</span></div>
                     </div>
 
-                    <div class="drawer ${(isExpanded && (gmMode || ent.type === 'pc')) ? '' : 'hidden'}">
+                    <div class="drawer ${(isExpanded && canAct) ? '' : 'hidden'}">
                         ${gmMode ? `
                             <div class="row-between wrap bar-box">
                                 <div class="row-center">
@@ -1324,6 +1482,8 @@
                                 ${gmMode ? `<button onclick="duplicateEntity('${ent.id}')" class="btn-gm-off" title="Clone this entry (e.g. a second goblin)">📋 Duplicate</button>` : ''}
                             </div>
                         ` : ''}
+                        ${gmMode ? conditionRowHtml(ent) : ''}
+                        ${(gmMode && ent.type === 'pc') ? ownerSelectHtml(ent) : ''}
                         ${!isEnemy ? `
                             <div class="grid-6">
                                 <button onclick="rollAbilityCheck('${ent.id}', 'STR', ${ent.str || 10})" class="roll-box"><span class="stat-label">STR</span><span class="text-amber">${ent.str || 10}</span></button>
@@ -1393,6 +1553,10 @@
 
         const xpPoolDisplay = document.getElementById("xpPoolDisplay");
         if (xpPoolDisplay) xpPoolDisplay.innerText = combatXpPool + " XP";
+        renderTurnStrip();
+        renderTargetChip();
+        renderPending();
+        updateUndoButton();
     }
 
 async function applyTokenVisibility(ent) {
@@ -1453,6 +1617,8 @@ async function applyTokenVisibility(ent) {
         const copy = JSON.parse(JSON.stringify(src));
         copy.id = "ent_" + Date.now() + "_" + Math.floor(Math.random() * 1000);
         copy.tokenId = "";
+        copy.ownerId = "";
+        copy.ownerName = "";
         copy.hp = copy.maxHp;
         copy.defeated = false;
         const m = String(src.name).match(/^(.*?)(?:\s+(\d+))?$/);
@@ -1496,6 +1662,149 @@ async function applyTokenVisibility(ent) {
         try { localStorage.setItem("add2e_follow", followTurn ? "1" : "0"); } catch (e) {}
     }
 
+    function toggleTarget(id) {
+        if (!gmOnly()) return;
+        currentTargetId = currentTargetId === id ? "" : id;
+        const t = entities.find(e => e.id === currentTargetId);
+        logAction(t ? `🎯 Target: <b>${t.name}</b>. ⚔️ and 💥 now roll against it.` : "🎯 Target cleared.");
+        renderRoster();
+    }
+
+    function clearTarget() {
+        if (!gmOnly()) return;
+        currentTargetId = "";
+        renderRoster();
+    }
+
+    function renderTargetChip() {
+        const chip = document.getElementById("targetChip");
+        const nm = document.getElementById("targetName");
+        if (!chip) return;
+        if (currentTargetId && !entities.some(e => e.id === currentTargetId)) currentTargetId = "";
+        const t = gmMode ? entities.find(e => e.id === currentTargetId) : null;
+        chip.classList.toggle("hidden", !t);
+        if (nm) nm.textContent = t ? t.name : "";
+    }
+
+    function setAutoApply(v) {
+        autoApply = !!v;
+        try { localStorage.setItem("add2e_autoapply", autoApply ? "1" : "0"); } catch (e) {}
+    }
+
+    // ---- Conditions with round timers ----
+    function conditionRowHtml(ent) {
+        const opts = STATUS_LIST.map(st => `<option value="${st}">${st}</option>`).join("");
+        return `<div class="row-between wrap bar-box"><span class="text-muted">⏳ Condition</span>` +
+            `<div class="row-center"><select id="cond_${ent.id}" style="width:auto;">${opts}</select>` +
+            `<input type="number" id="condN_${ent.id}" min="1" placeholder="rds" title="Rounds (leave blank to last until removed)" style="width:56px;">` +
+            `<button onclick="addCondition('${ent.id}')" class="btn-indigo">＋ Add</button></div></div>`;
+    }
+
+    function addCondition(id) {
+        if (!gmOnly()) return;
+        const ent = entities.find(e => e.id === id);
+        const sel = document.getElementById(`cond_${id}`);
+        if (!ent || !sel) return;
+        const numEl = document.getElementById(`condN_${id}`);
+        const status = sel.value;
+        const n = parseInt(numEl ? numEl.value : "", 10);
+        ent.statuses = ent.statuses || [];
+        if (!ent.statuses.includes(status)) ent.statuses.push(status);
+        ent.timers = ent.timers || {};
+        if (n > 0) ent.timers[status] = n; else delete ent.timers[status];
+        logAction(`⏳ <b>${ent.name}</b>: ${status}${n > 0 ? ` for ${n} round${n === 1 ? "" : "s"}` : " (until removed)"}.`);
+        syncState();
+        renderRoster();
+    }
+
+    function removeStatusAt(id, idx) {
+        if (!gmOnly()) return;
+        const ent = entities.find(e => e.id === id);
+        if (!ent || !ent.statuses) return;
+        const removed = ent.statuses.splice(idx, 1)[0];
+        if (ent.timers && removed) delete ent.timers[removed];
+        syncState();
+        renderRoster();
+    }
+
+    // Called when a new round starts: count every timer down, drop conditions that run out
+    function tickConditions() {
+        const expired = [];
+        for (const ent of entities) {
+            if (!ent.timers) continue;
+            for (const st of Object.keys(ent.timers)) {
+                ent.timers[st] -= 1;
+                if (ent.timers[st] <= 0) {
+                    delete ent.timers[st];
+                    ent.statuses = (ent.statuses || []).filter(x => x !== st);
+                    expired.push(`${ent.name} (${st})`);
+                }
+            }
+        }
+        return expired;
+    }
+
+    // ---- Player <-> character ownership ----
+    function ownerSelectHtml(ent) {
+        const opts = partyPlayers.map(pl => `<option value="${esc(pl.id)}" ${pl.id === ent.ownerId ? "selected" : ""}>${esc(pl.name)}</option>`);
+        if (ent.ownerId && !partyPlayers.some(pl => pl.id === ent.ownerId)) {
+            opts.unshift(`<option value="${esc(ent.ownerId)}" selected>${esc(ent.ownerName || "Player")} (offline)</option>`);
+        }
+        const hint = isObrConnected ? "" : `<span class="text-muted">Players show up here inside an Owlbear room.</span>`;
+        return `<div class="row-between wrap bar-box"><span class="text-muted">👤 Played by</span>` +
+            `<select onchange="assignOwner('${ent.id}', this.value)" style="width:auto; min-width:150px;"><option value="">— Unassigned —</option>${opts.join("")}</select>${hint}</div>`;
+    }
+
+    function assignOwner(id, pid) {
+        if (!gmOnly()) return;
+        const ent = entities.find(e => e.id === id);
+        if (!ent) return;
+        if (!pid) {
+            ent.ownerId = "";
+            ent.ownerName = "";
+            logAction(`👤 <b>${ent.name}</b> is no longer linked to a player.`);
+        } else {
+            const pl = partyPlayers.find(x => x.id === pid);
+            ent.ownerId = pid;
+            ent.ownerName = pl ? pl.name : (ent.ownerName || "Player");
+            logAction(`👤 <b>${ent.name}</b> is now played by <b>${esc(ent.ownerName)}</b>.`);
+        }
+        syncState();
+        renderRoster();
+    }
+
+    function setPartyFrom(others) {
+        const list = (others || []).filter(pl => pl.role !== "GM").map(pl => ({ id: pl.id, name: cleanName(pl.name) || "Player" }));
+        try { if (OBR_SDK && OBR_SDK.player && OBR_SDK.player.id) list.push({ id: OBR_SDK.player.id, name: "Me (GM)" }); } catch (e) {}
+        partyPlayers = list;
+    }
+
+    async function refreshParty() {
+        if (!isObrConnected || !OBR_SDK) return;
+        try { setPartyFrom(await OBR_SDK.party.getPlayers()); } catch (e) { console.warn("Party lookup failed:", e); }
+        if (gmMode) renderRoster();
+    }
+
+    // ---- Turn order strip ----
+    function renderTurnStrip() {
+        const el = document.getElementById("turnStrip");
+        if (!el) return;
+        const n = entities.length;
+        if (!n) { el.innerHTML = ""; return; }
+        let html = `<span class="ts-round">Rd ${currentRound}</span>`;
+        for (let k = 0; k < n; k++) {
+            const e = entities[(activeTurnIndex + k) % n];
+            if (!e || e.hp <= 0) continue;
+            if (!gmMode && e.hidden) continue;
+            const accent = e.type === "pc" ? "#fbbf24" : e.type === "npc" ? "#60a5fa" : "#f87171";
+            const img = e.img ? `background-image:url('${safeUrl(e.img)}');` : "";
+            html += `<div class="ts-item ${k === 0 ? "active" : ""} ${e.hidden ? "hid" : ""}" onclick="focusToken('${e.id}')" title="${esc(e.name)}">` +
+                `<div class="ts-av" style="--accent:${accent};${img}">${e.img ? "" : esc((e.name || "?").charAt(0).toUpperCase())}</div>` +
+                `<span class="ts-init">${e.initiative !== undefined ? e.initiative : "-"}</span></div>`;
+        }
+        el.innerHTML = html;
+    }
+
     function toggleGroup(key) {
         collapsedGroups[key] = !collapsedGroups[key];
         renderRoster();
@@ -1506,12 +1815,8 @@ async function applyTokenVisibility(ent) {
         renderRoster();
     }
 
-    function updateHp(id, valStr) {
-        if (!gmOnly()) return;
-        const ent = entities.find(e => e.id === id);
-        if (!ent) return;
-
-        valStr = valStr.trim();
+    function applyHpString(ent, valStr) {
+        valStr = String(valStr).trim();
         if (valStr.startsWith("+") || valStr.startsWith("-")) {
             const delta = parseInt(valStr, 10) || 0;
             ent.hp = Math.max(0, Math.min(ent.maxHp, ent.hp + delta));
@@ -1535,6 +1840,46 @@ async function applyTokenVisibility(ent) {
                 ent.defeated = false;
             }
         }
+    }
+
+    // Records what an HP change did (HP, defeated flag, XP pool) so it can be reversed
+    function withUndo(ent, fn) {
+        const snap = { id: ent.id, hp: ent.hp, maxHp: ent.maxHp, defeated: !!ent.defeated };
+        const poolBefore = combatXpPool;
+        fn();
+        snap.poolDelta = combatXpPool - poolBefore;
+        if (snap.hp !== ent.hp || snap.maxHp !== ent.maxHp || snap.defeated !== !!ent.defeated) {
+            undoStack.push(snap);
+            if (undoStack.length > 30) undoStack.shift();
+        }
+    }
+
+    function undoLast() {
+        if (!gmOnly()) return;
+        const snap = undoStack.pop();
+        if (!snap) { logAction("↩ Nothing to undo."); updateUndoButton(); return; }
+        const ent = entities.find(e => e.id === snap.id);
+        if (!ent) { logAction("↩ That entry was removed, so its last change can't be undone."); updateUndoButton(); return; }
+        ent.hp = snap.hp;
+        ent.maxHp = snap.maxHp;
+        ent.defeated = snap.defeated;
+        combatXpPool = Math.max(0, combatXpPool - (snap.poolDelta || 0));
+        logAction(`↩ Undid the last change to <b>${ent.name}</b>: HP back to <b>${ent.hp}/${ent.maxHp}</b>.`);
+        syncTokenOnMap(ent);
+        syncState();
+        renderRoster();
+    }
+
+    function updateUndoButton() {
+        const b = document.getElementById("undoBtn");
+        if (b) b.disabled = undoStack.length === 0;
+    }
+
+    function updateHp(id, valStr) {
+        if (!gmOnly()) return;
+        const ent = entities.find(e => e.id === id);
+        if (!ent) return;
+        withUndo(ent, () => applyHpString(ent, valStr));
         syncTokenOnMap(ent);
         syncState();
         renderRoster();
@@ -1577,9 +1922,11 @@ async function applyTokenVisibility(ent) {
         if (!gmOnly()) return;
         const ent = entities.find(e => e.id === id);
         if (!ent || ent.defeated) return;
-        ent.hp = 0;
-        ent.defeated = true;
-        combatXpPool += (ent.monsterXp || 50);
+        withUndo(ent, () => {
+            ent.hp = 0;
+            ent.defeated = true;
+            combatXpPool += (ent.monsterXp || 50);
+        });
         logAction(`💀 <b>${ent.name}</b> defeated! Added <b>${ent.monsterXp || 50} XP</b> to combat pool.`);
         syncTokenOnMap(ent);
         syncState();
@@ -1787,7 +2134,7 @@ async function applyTokenVisibility(ent) {
         const hidden = !!(document.getElementById("modalHidden") && document.getElementById("modalHidden").checked);
         let hiddenChanged = false;
         const type = typeEl ? typeEl.value : "pc";
-        const name = nameEl && nameEl.value ? nameEl.value : "Unknown";
+        const name = cleanName(nameEl && nameEl.value ? nameEl.value : "") || "Unknown";
         const maxHp = Math.max(1, parseInt(maxHpEl ? maxHpEl.value : "10", 10) || 10);
         const hpParsed = parseInt(hpEl ? hpEl.value : maxHp, 10);
         const hp = Math.max(0, Math.min(maxHp, isNaN(hpParsed) ? maxHp : hpParsed));
@@ -1819,6 +2166,7 @@ async function applyTokenVisibility(ent) {
             if (ent) {
                 hiddenChanged = !!ent.hidden !== hidden;
                 Object.assign(ent, { name, type, hp, maxHp, thac0, ac, weaponDice, toHitMod, dmgMod, weaponSpeed, tokenId, hidden, img: img || ent.img || "", statuses: selectedStatuses });
+                if (ent.timers) { for (const k of Object.keys(ent.timers)) if (!selectedStatuses.includes(k)) delete ent.timers[k]; }
                 if (ent.initRoll !== undefined) ent.initiative = ent.initRoll + weaponSpeed;
                 if (type !== 'enemy') {
                     ent.class1 = document.getElementById("modalClass1")?.value || "Fighter";
@@ -1918,7 +2266,7 @@ async function applyTokenVisibility(ent) {
             try {
                 const data = JSON.parse(e.target.result);
                 if (data.entities) {
-                    entities = data.entities;
+                    entities = data.entities.map(e => Object.assign(e, { name: cleanName(e.name) || "Unknown" }));
                     combatXpPool = data.combatXpPool || 0;
                     currentRound = data.currentRound || 1;
                     syncState();
@@ -1938,6 +2286,12 @@ async function applyTokenVisibility(ent) {
         if (ft) ft.checked = followTurn;
     } catch (e) {}
     document.body.classList.toggle("player-view", !gmMode);
+    try {
+        autoApply = localStorage.getItem("add2e_autoapply") === "1";
+        const aa = document.getElementById("autoApply");
+        if (aa) aa.checked = autoApply;
+    } catch (e) {}
+    buildStatusChecks();
     loadLocalState();
     renderRoster();
 
@@ -1952,14 +2306,17 @@ async function applyTokenVisibility(ent) {
             if (OBR_SDK && OBR_SDK.isAvailable) {
                 OBR_SDK.onReady(async () => {
                     isObrConnected = true;
+                    try { myPlayerId = OBR_SDK.player.id || ""; } catch (e) {}
                     const dot = document.getElementById("obrStatusDot");
                     const txt = document.getElementById("obrStatusText");
                     if (dot) dot.classList.add("connected");
-                    if (txt) txt.innerText = "OBR Room Connected · v17 badges";
+                    if (txt) txt.innerText = "OBR Room Connected · v18 badges";
 
                     const role = await OBR_SDK.player.getRole();
                     setGmPermission(role === "GM");
                     OBR_SDK.player.onChange((player) => setGmPermission(player.role === "GM"));
+                    await refreshParty();
+                    OBR_SDK.party.onChange((players) => { setPartyFrom(players); if (gmMode) renderRoster(); });
 
                     const meta = await OBR_SDK.room.getMetadata();
                     if (meta[META_KEY]) {
@@ -1968,12 +2325,15 @@ async function applyTokenVisibility(ent) {
                         currentRound = meta[META_KEY].currentRound || 1;
                         activeTurnIndex = meta[META_KEY].activeTurnIndex || 0;
                         renderRoster();
-                    } else {
+                    } else if (gmMode) {
                         await syncState();
+                    } else {
+                        entities = [];
+                        renderRoster();
                     }
 
                     OBR_SDK.room.onMetadataChange((newMeta) => {
-                        if (newMeta[META_KEY]) {
+                        if (newMeta[META_KEY] && !(gmMode && JSON.stringify(newMeta[META_KEY]) === lastWrittenJson)) {
                             entities = newMeta[META_KEY].entities || entities;
                             combatXpPool = newMeta[META_KEY].combatXpPool || 0;
                             currentRound = newMeta[META_KEY].currentRound || 1;
