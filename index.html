@@ -430,7 +430,8 @@
     let expandedRows = {};
     let gmMode = true;
     let OBR_SDK = null;
-    let buildLabel = null;
+    let buildShape = null;
+    let buildText = null;
     let isObrConnected = false;
 
     function setVal(id, val) {
@@ -662,7 +663,7 @@
     }
 
     async function doSyncTokenOnMap(ent) {
-        if (!isObrConnected || !OBR_SDK || !buildLabel || !ent || !ent.tokenId) return;
+        if (!isObrConnected || !OBR_SDK || (!buildShape || !buildText) || !ent || !ent.tokenId) return;
         if (!gmMode) return; // only the GM manages badge items
 
         const tokens = await OBR_SDK.scene.items.getItems([ent.tokenId]);
@@ -682,37 +683,70 @@
         const b = await OBR_SDK.scene.items.getItemBounds([ent.tokenId]);
         const w = b.width, h = b.height;
 
-        const make = (text, x, y, color) =>
-            buildLabel()
-                .plainText(text)
-                .position({ x, y })
-                .backgroundColor(color)
-                .backgroundOpacity(0.92)
-                .pointerDirection("DOWN")
-                .pointerHeight(0)
-                .cornerRadius(6)
-                .attachedTo(ent.tokenId)
-                .layer("ATTACHMENT")
-                .locked(true)
-                .disableHit(true)
-                .disableAttachmentBehavior(["ROTATION", "VISIBLE"])
-                .metadata({ [BADGE_KEY]: { tokenId: ent.tokenId } })
-                .build();
+        // Everything is sized from the token itself, so badges scale with the map zoom
+        const sz = Math.min(w, h) * 0.24;          // square badge size
+        const gap = Math.min(w, h) * 0.04;
+        const pad = Math.min(w, h) * 0.03;
+        const left = b.min.x + pad;
+        const right = b.max.x - pad - sz;
+        const row1 = b.min.y + h * 0.06;
+        const row2 = row1 + sz + gap * 1.5;
+        const barH = sz * 0.8;
+        const barW = w - pad * 2;
+        const barX = b.min.x + pad;
+        const barY = b.max.y - barH - pad;
 
         const spd = ent.weaponSpeed !== undefined ? ent.weaponSpeed : 5;
         const init = ent.initiative !== undefined ? ent.initiative : "-";
         const dead = ent.hp <= 0 ? "💀 " : "";
         const isEnemy = ent.type === "enemy";
+        const hpPct = Math.max(0, Math.min(1, ent.maxHp > 0 ? ent.hp / ent.maxHp : 0));
+
+        let z = Date.now();
+        const meta = { [BADGE_KEY]: { tokenId: ent.tokenId } };
+        const finish = (builder) =>
+            builder.attachedTo(ent.tokenId)
+                .layer("ATTACHMENT")
+                .locked(true)
+                .disableHit(true)
+                .disableAttachmentBehavior(["ROTATION"])
+                .zIndex(z++)
+                .metadata(meta)
+                .build();
+
+        const rect = (x, y, rw, rh, fill, stroke, strokeW) =>
+            finish(buildShape().shapeType("RECTANGLE").position({ x, y })
+                .width(rw).height(rh)
+                .fillColor(fill).fillOpacity(0.95)
+                .strokeColor(stroke).strokeOpacity(1).strokeWidth(strokeW));
+
+        const txt = (x, y, tw, th, text, size) =>
+            finish(buildText().textType("PLAIN").plainText(String(text)).position({ x, y })
+                .width(tw).height(th)
+                .textAlign("CENTER").textAlignVertical("MIDDLE")
+                .fontSize(size).fontWeight(800)
+                .fillColor("#ffffff").fillOpacity(1)
+                .strokeColor("#000000").strokeOpacity(0).strokeWidth(0));
 
         const items = [];
-        // Enemy THAC0 / AC stay off the map so players can't read them
+        const stat = (x, y, value, borderColor) => {
+            items.push(rect(x, y, sz, sz, "#0b1220", borderColor, Math.max(2, sz * 0.07)));
+            items.push(txt(x, y, sz, sz, value, sz * 0.58));
+        };
+
+        // Same layout as the reference: THAC0 / AC on top, Speed / Init below, HP bar along the bottom
+        // Enemy THAC0 + AC are not drawn so players can't read them
         if (!isEnemy) {
-            items.push(make(`TH ${ent.thac0}`, b.min.x + w * 0.2, b.min.y + h * 0.3, "#0369a1"));
-            items.push(make(`AC ${ent.ac}`, b.max.x - w * 0.2, b.min.y + h * 0.3, "#475569"));
+            stat(left, row1, ent.thac0, "#38bdf8");   // blue   = THAC0
+            stat(right, row1, ent.ac, "#94a3b8");     // grey   = AC
         }
-        items.push(make(`Spd ${spd}`, b.min.x + w * 0.2, b.min.y + h * 0.62, "#a16207"));
-        items.push(make(`Init ${init}`, b.max.x - w * 0.2, b.min.y + h * 0.62, "#15803d"));
-        items.push(make(`${dead}${ent.hp}/${ent.maxHp}`, b.center.x, b.max.y + h * 0.1, "#b91c1c"));
+        stat(left, row2, spd, "#facc15");             // yellow = Speed
+        stat(right, row2, init, "#4ade80");           // green  = Initiative
+
+        // HP bar: dark base + red fill that shrinks as HP drops
+        items.push(rect(barX, barY, barW, barH, "#450a0a", "#000000", Math.max(1, sz * 0.04)));
+        if (hpPct > 0) items.push(rect(barX, barY, barW * hpPct, barH, "#dc2626", "#dc2626", 0));
+        items.push(txt(barX, barY, barW, barH, `${dead}${ent.hp}/${ent.maxHp}`, barH * 0.62));
 
         await OBR_SDK.scene.items.addItems(items);
     }
@@ -1653,14 +1687,15 @@
         try {
             const mod = await import("https://cdn.jsdelivr.net/npm/@owlbear-rodeo/sdk@3.1.0/+esm");
             OBR_SDK = mod.default;
-            buildLabel = mod.buildLabel;
+            buildShape = mod.buildShape;
+            buildText = mod.buildText;
             if (OBR_SDK && OBR_SDK.isAvailable) {
                 OBR_SDK.onReady(async () => {
                     isObrConnected = true;
                     const dot = document.getElementById("obrStatusDot");
                     const txt = document.getElementById("obrStatusText");
                     if (dot) dot.classList.add("connected");
-                    if (txt) txt.innerText = "OBR Room Connected · v11 badges";
+                    if (txt) txt.innerText = "OBR Room Connected · v12 badges";
 
                     const role = await OBR_SDK.player.getRole();
                     setGmPermission(role === "GM");
