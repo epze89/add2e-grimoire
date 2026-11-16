@@ -644,7 +644,7 @@
     let badgeQueue = Promise.resolve();
 
     function syncTokenOnMap(ent) {
-        badgeQueue = badgeQueue.then(() => doSyncTokenOnMap(ent)).catch(e => console.warn("Badge sync error:", e));
+        badgeQueue = badgeQueue.then(() => doSyncTokenOnMap(ent)).catch(e => { console.warn("Badge sync error:", e); logAction("⚠️ Badge sync error: " + (e && e.message ? e.message : e)); });
         return badgeQueue;
     }
 
@@ -667,6 +667,15 @@
 
         const tokens = await OBR_SDK.scene.items.getItems([ent.tokenId]);
         if (!tokens.length) return; // token no longer on the map
+
+        // Wipe the old "Name / HP | TH | AC" text label the previous version wrote on the token
+        await OBR_SDK.scene.items.updateItems([ent.tokenId], (items) => {
+            for (const item of items) {
+                if (item.text && item.text.plainText && /HP:\s*\d+\s*\/\s*\d+/.test(item.text.plainText)) {
+                    item.text.plainText = "";
+                }
+            }
+        });
 
         await doRemoveBadges(ent.tokenId);
 
@@ -1651,7 +1660,7 @@
                     const dot = document.getElementById("obrStatusDot");
                     const txt = document.getElementById("obrStatusText");
                     if (dot) dot.classList.add("connected");
-                    if (txt) txt.innerText = "OBR Room Connected";
+                    if (txt) txt.innerText = "OBR Room Connected · v11 badges";
 
                     const role = await OBR_SDK.player.getRole();
                     setGmPermission(role === "GM");
