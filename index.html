@@ -392,6 +392,8 @@
         <div class="tools-group tools-foot">
             <button onclick="toggleGmMode()" id="gmModeBtn" class="btn-gm-on">🔒 <span id="gmModeText">GM Mode: ON</span></button>
             <div class="status-line"><span id="obrStatusText">Browser Mode (Local Save)</span></div>
+            <div class="tools-row"><button onclick="runDiagnostics()" class="btn-gm-off">🩺 Check connection &amp; players</button></div>
+            <div id="diagBox" class="status-line hidden" style="white-space:pre-wrap; user-select:text;"></div>
         </div>
     </div>
 
@@ -1400,14 +1402,20 @@ const STATUS_LIST = ["Casting ⚡", "Blessed ✨", "Hasted 💨", "Slowed 🐌",
             openAddModal('enemy', "Simulated Map Token", "sim_tok_" + Date.now());
             return;
         }
-        const selection = await OBR_SDK.player.getSelection();
-        if (!selection || selection.length === 0) {
-            logAction("⚠️ Select a token on the Owlbear Rodeo map first, then click <b>🔗 + From Token</b>.");
+        let token;
+        try {
+            const selection = await OBR_SDK.player.getSelection();
+            if (!selection || selection.length === 0) {
+                logAction("⚠️ Select a token on the Owlbear Rodeo map first, then click <b>🔗 From Token</b>.");
+                return;
+            }
+            const items = await OBR_SDK.scene.items.getItems(selection);
+            token = items[0];
+        } catch (e) {
+            logAction("⚠️ Could not read the selected token: " + esc(e && e.message || e));
             return;
         }
-        const items = await OBR_SDK.scene.items.getItems(selection);
-        const token = items[0];
-        if (!token) return;
+        if (!token) { logAction("⚠️ The selected item could not be found on the map."); return; }
         const rawName = token.name || (token.text && token.text.plainText) || "Linked Token";
         const cleanName = rawName.split("\n")[0].replace(/\s*\d+\/\d+$/, "").replace(/^💀\s*/, "");
         openAddModal('pc', cleanName, token.id, (token.image && token.image.url) || "", !token.visible);
@@ -2057,6 +2065,20 @@ async function applyTokenVisibility(ent) {
         if (gmMode) renderRoster();
     }
 
+    async function runDiagnostics() {
+        const box = document.getElementById("diagBox");
+        if (!box) return;
+        box.classList.remove("hidden");
+        const lines = ["Version: v19.1", "Inside Owlbear: " + (isObrConnected ? "yes" : "no (browser mode)"), "GM permissions: " + (gmMode ? "yes" : "no (player view)")];
+        if (isObrConnected && OBR_SDK) {
+            try { lines.push("Owlbear role: " + await OBR_SDK.player.getRole()); } catch (e) { lines.push("Role lookup failed: " + (e && e.message || e)); }
+            try { await refreshParty(); lines.push("Players found: " + partyPlayers.map(x => x.name).join(", ")); } catch (e) { lines.push("Player lookup failed: " + (e && e.message || e)); }
+            try { const sel = await OBR_SDK.player.getSelection(); lines.push("Selected tokens: " + ((sel && sel.length) || 0)); } catch (e) { lines.push("Selection lookup failed: " + (e && e.message || e)); }
+            try { lines.push("Scene ready: " + await OBR_SDK.scene.isReady()); } catch (e) {}
+        }
+        box.textContent = lines.join("\n");
+    }
+
     // ---- Turn order strip ----
     function renderTurnStrip() {
         const el = document.getElementById("turnStrip");
@@ -2085,6 +2107,7 @@ async function applyTokenVisibility(ent) {
     function toggleExpand(id) {
         expandedRows[id] = !expandedRows[id];
         renderRoster();
+        if (expandedRows[id] && isObrConnected) refreshParty();
     }
 
     function applyHpString(ent, valStr) {
@@ -2601,8 +2624,8 @@ async function applyTokenVisibility(ent) {
                     const dot = document.getElementById("obrStatusDot");
                     const txt = document.getElementById("obrStatusText");
                     if (dot) dot.classList.add("connected");
-                    if (txt) txt.innerText = "OBR Room Connected · v19 badges";
-                    if (dot) dot.title = "OBR Room Connected · v19 badges";
+                    if (txt) txt.innerText = "OBR Room Connected · v19.1 badges";
+                    if (dot) dot.title = "OBR Room Connected · v19.1 badges";
                     const sizeRow = document.getElementById("sizeRow");
                     if (sizeRow) sizeRow.classList.remove("hidden");
                     if (ui.size) applyPanelSize(); else ensureMinPanelSize();
