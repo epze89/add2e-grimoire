@@ -292,6 +292,53 @@
         body.narrow .modal-body { padding: 8px; gap: 8px; }
         body.narrow .sec { padding: 6px 8px; gap: 6px; }
         body.dense .sec-title { font-size: 11px; }
+        /* ================= v20: ship tab ================= */
+        .tabs { display: flex; gap: 0; }
+        .tabs button { flex: 1; border-radius: 0; background: var(--bg3); border: 1px solid var(--line); color: var(--muted); font-weight: 700; padding: 5px 8px; min-height: 30px; }
+        .tabs button:first-child { border-radius: 6px 0 0 6px; }
+        .tabs button:last-child { border-radius: 0 6px 6px 0; }
+        .tabs button.on { background: #4338ca; border-color: #6366f1; color: #fff; }
+        body.tab-ship .subbar { display: none; }
+        body.tab-ship #rosterContainer { display: none; }
+        main#shipPanel { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding-right: 2px; }
+        main#shipPanel.hidden { display: none; }
+        .sh-card { background: var(--bg2); border: 1px solid var(--line); border-radius: 8px; padding: 8px; display: flex; flex-direction: column; gap: 6px; }
+        .sh-title { font-size: 10px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); display: flex; justify-content: space-between; align-items: center; gap: 6px; }
+        .sh-name { font-size: 16px; font-weight: 800; color: #fbbf24; }
+        .sh-hull { position: relative; height: 34px; border-radius: 6px; overflow: hidden; background: #2a2433; border: 1px solid var(--line); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 15px; }
+        .sh-hull .fill { position: absolute; inset: 0 auto 0 0; transition: width .25s; }
+        .sh-hull span { position: relative; text-shadow: 0 1px 2px #000; }
+        .st-sound .fill { background: linear-gradient(#22c55e,#15803d); }
+        .st-battered .fill { background: linear-gradient(#eab308,#a16207); }
+        .st-crippled .fill { background: linear-gradient(#f97316,#c2410c); }
+        .st-wreck .fill { background: linear-gradient(#ef4444,#991b1b); }
+        .sh-state { font-weight: 800; padding: 2px 8px; border-radius: 999px; font-size: 11px; border: 1px solid; white-space: nowrap; }
+        .sh-state.st-sound { color: #4ade80; border-color: #166534; background: #052e16; }
+        .sh-state.st-battered { color: #facc15; border-color: #854d0e; background: #2d2105; }
+        .sh-state.st-crippled { color: #fb923c; border-color: #9a3412; background: #2b1305; }
+        .sh-state.st-wreck { color: #f87171; border-color: #991b1b; background: #2d0a0a; }
+        .sh-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(62px, 1fr)); gap: 4px; }
+        .sh-stat { background: var(--bg4); border: 1px solid var(--line); border-radius: 6px; padding: 3px 2px; text-align: center; }
+        .sh-stat .lbl { font-size: 9px; color: var(--muted); font-weight: 800; text-transform: uppercase; display: block; }
+        .sh-stat .val { font-size: 15px; font-weight: 800; }
+        .sh-stat .val.bad { color: #f87171; }
+        .sh-row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+        .sh-row input[type=number], .sh-row input[type=text] { min-width: 0; }
+        .sh-effect { font-size: 12px; color: var(--muted); line-height: 1.35; }
+        .sh-warn { font-size: 12px; color: #fbbf24; background: #2d2105; border: 1px solid #854d0e; border-radius: 6px; padding: 4px 8px; }
+        .sh-weapon { display: flex; align-items: center; gap: 6px; padding: 5px 6px; border-radius: 6px; background: var(--bg4); border: 1px solid var(--line); flex-wrap: wrap; }
+        .sh-weapon.broken { opacity: .55; border-style: dashed; }
+        .sh-weapon .wn { flex: 1 1 110px; min-width: 0; font-weight: 700; }
+        .sh-weapon .wm { font-size: 11px; color: var(--muted); }
+        .sh-issue { display: flex; gap: 6px; align-items: center; padding: 4px 6px; border-radius: 6px; background: var(--bg4); border: 1px solid var(--line); font-size: 12px; }
+        .sh-issue.fixed { opacity: .5; text-decoration: line-through; }
+        .sh-issue .t { flex: 1; }
+        .sh-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+        body.xs .sh-grid2 { grid-template-columns: 1fr; }
+        body.wide main#shipPanel:not(.hidden) { display: grid; grid-template-columns: 1fr 1fr; align-content: start; }
+        body.wide #shipPanel > .sh-wide { grid-column: 1 / -1; }
+        .sh-edit-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); gap: 6px; }
+        .sh-edit-grid label { font-size: 10px; color: var(--muted); font-weight: 800; text-transform: uppercase; display: flex; flex-direction: column; gap: 2px; }
     </style>
 </head>
 <body>
@@ -397,6 +444,11 @@
         </div>
     </div>
 
+    <div class="tabs" id="tabBar">
+        <button data-tab="roster" onclick="setTab('roster')" class="on">⚔️ Party &amp; Combat</button>
+        <button data-tab="ship" onclick="setTab('ship')">🚀 Ship</button>
+    </div>
+
     <!-- TURN ORDER + CURRENT TARGET -->
     <div class="subbar">
         <div id="turnStrip" class="turn-strip"></div>
@@ -406,6 +458,7 @@
 
 <!-- ROSTER CONTAINER -->
 <main id="rosterContainer"></main>
+<main id="shipPanel" class="hidden"></main>
 
 <!-- LIVE LOG / RESULT BANNER -->
 <div id="pendingBar" class="pending hidden gm-only"></div>
@@ -616,6 +669,11 @@
     let pendingHit = null;
     let autoApply = false;
     let lastWrittenJson = "";
+    let ship = null;
+    let shipBench = [];
+    let shipMgr = false;
+    let activeTab = "roster";
+    let shipEdit = false;
     let saveWarned = false;
     let gmMode = (window.self === window.top); // inside Owlbear (iframe) start as player until the role is known
     let OBR_SDK = null;
@@ -1178,6 +1236,8 @@
                 combatXpPool = parsed.combatXpPool || 0;
                 currentRound = parsed.currentRound || 1;
                 activeTurnIndex = parsed.activeTurnIndex || 0;
+                ship = parsed.ship || null;
+                shipBench = parsed.shipBench || [];
             } else {
                 entities = defaultEntities;
             }
@@ -1187,7 +1247,7 @@
     }
 
     async function syncState() {
-        const payload = { entities, combatXpPool, currentRound, activeTurnIndex };
+        const payload = { entities, combatXpPool, currentRound, activeTurnIndex, ship, shipBench };
         try {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
         } catch (e) {}
@@ -1220,6 +1280,7 @@
             if (distBtn) distBtn.classList.add("hidden");
         }
         document.body.classList.toggle("player-view", !gmMode);
+        renderShip();
         // Inside Owlbear the role decides; the manual GM switch only exists in plain-browser mode
         if (btn) btn.classList.toggle("hidden", isObrConnected && !gmMode);
         renderRoster();
@@ -1371,6 +1432,545 @@ const STATUS_LIST = ["Casting ⚡", "Blessed ✨", "Hasted 💨", "Slowed 🐌",
         });
         const body = document.querySelector("#entityModal .modal-body");
         if (body) body.scrollTop = 0;
+    }
+
+    // ===================== v20: Spelljammer ship tab =====================
+    const MC_ORDER = ["A", "B", "C", "D", "E", "F"];
+    // House-rule damage states (suggested, not from the book). Penalties can be switched off per ship.
+    const SHIP_STATES = [
+        { key: "sound",    min: 75, label: "Sound",    srPen: 0, mcPen: 0, text: "Fully functional." },
+        { key: "battered", min: 50, label: "Battered", srPen: 1, mcPen: 0, text: "Scarred and straining: −1 SR. Rigging, bulkheads and nerves are fraying." },
+        { key: "crippled", min: 25, label: "Crippled", srPen: 1, mcPen: 1, text: "Flies, but barely: −1 SR and one worse Maneuver Class. Roll criticals on big hits." },
+        { key: "wreck",    min: 0,  label: "Breaking up", srPen: 2, mcPen: 2, text: "One more broadside could finish her: −2 SR, two worse Maneuver Classes. Time for emergency repairs or abandoning ship." }
+    ];
+    // House critical-hit table (d10). Swap for the table in your Spelljammer book if you prefer.
+    const SHIP_CRITS = [
+        "Helm hit", "Weapon destroyed", "Weapon damaged", "Fire on deck", "Air leak",
+        "Crew casualties", "Rudder / control damage", "Hull breach", "Supplies ruined", "Glancing blow"
+    ];
+
+    function defaultShip() {
+        return {
+            name: "The Hammership", type: "Hammership", tons: 60,
+            hullMax: 60, hull: 60, ar: 6, mc: "D", sr: 3,
+            crew: 24, crewMin: 24, crewMax: 60, helm: "Major", helmOk: true, mcHit: 0, penalties: true,
+            air: 10, food: 10, day: 1,
+            weapons: [
+                { id: "w1", name: "Heavy catapult", dmg: "", crew: 0, ammo: 0, ammoMax: 0, state: "ok" },
+                { id: "w2", name: "Heavy catapult (360°)", dmg: "", crew: 0, ammo: 0, ammoMax: 0, state: "ok" },
+                { id: "w3", name: "Heavy ballista (360°)", dmg: "", crew: 0, ammo: 0, ammoMax: 0, state: "ok" },
+                { id: "w4", name: "Blunt ram", dmg: "", crew: 0, ammo: 0, ammoMax: 0, state: "ok" }
+            ],
+            issues: [], history: [],
+            id: "s" + Date.now() + Math.floor(Math.random() * 999), cargo: [], gp: 0, cargoMax: 30
+        };
+    }
+    function blankShip(name) {
+        const sh = defaultShip();
+        Object.assign(sh, { name: name || "New Ship", type: "Custom", tons: 20, hullMax: 20, hull: 20, ar: 8, mc: "C", sr: 2,
+            crew: 5, crewMin: 3, crewMax: 10, helm: "Minor", weapons: [], cargoMax: 10, air: 10, food: 10, day: 1 });
+        return sh;
+    }
+    function normShip(sh) {
+        if (!sh) return sh;
+        sh.cargo = sh.cargo || [];
+        sh.gp = sh.gp || 0;
+        if (sh.cargoMax === undefined) sh.cargoMax = 30;
+        if (!sh.id) sh.id = "s" + Date.now() + Math.floor(Math.random() * 999);
+        sh.weapons = sh.weapons || []; sh.issues = sh.issues || []; sh.history = sh.history || [];
+        return sh;
+    }
+    function ensureShip() { if (!ship) ship = defaultShip(); return normShip(ship); }
+
+    function shipState(sh) {
+        const pct = sh.hullMax > 0 ? (sh.hull / sh.hullMax) * 100 : 0;
+        if (sh.hull <= 0) return SHIP_STATES[3];
+        return SHIP_STATES.find(st => pct >= st.min) || SHIP_STATES[3];
+    }
+    function shipEffective(sh) {
+        const st = shipState(sh);
+        const under = sh.crew < sh.crewMin;
+        const pen = sh.penalties ? st.srPen + (under ? 1 : 0) : 0;
+        const mcSteps = (sh.penalties ? st.mcPen : 0) + (sh.mcHit || 0);
+        const sr = sh.helmOk ? Math.max(0, (sh.sr || 0) - pen) : 0;
+        const idx = Math.min(MC_ORDER.length - 1, Math.max(0, MC_ORDER.indexOf(sh.mc)) + mcSteps);
+        return { st, under, sr, mc: sh.helmOk ? MC_ORDER[idx] : "—" };
+    }
+    function numVal(v, min, max, dflt) {
+        const n = parseInt(v, 10);
+        if (isNaN(n)) return dflt;
+        return Math.max(min, Math.min(max, n));
+    }
+
+    function setTab(tab) {
+        activeTab = tab;
+        document.body.classList.toggle("tab-ship", tab === "ship");
+        document.querySelectorAll("#tabBar button").forEach(b => b.classList.toggle("on", b.dataset.tab === tab));
+        const panel = document.getElementById("shipPanel");
+        if (panel) panel.classList.toggle("hidden", tab !== "ship");
+        try { localStorage.setItem("add2e_tab", tab); } catch (e) {}
+        if (tab === "ship") renderShip();
+    }
+
+    function shipPush(msg) {
+        if (msg) logAction(msg);
+        syncState();
+        renderShip();
+    }
+    function shipSnapshot(sh) {
+        sh.history = (sh.history || []).slice(-9);
+        sh.history.push({ hull: sh.hull, crew: sh.crew, why: "" });
+    }
+
+    let shipAmt = 5;
+    function readAmt() { return Math.max(1, numVal(shipAmt, 1, 9999, 5)); }
+
+    function shipHit(dir) {
+        if (!gmOnly()) return;
+        const sh = ensureShip();
+        const n = readAmt();
+        const before = shipState(sh);
+        shipSnapshot(sh);
+        let msg;
+        if (dir < 0) {
+            sh.hull = Math.max(0, sh.hull - n);
+            msg = `💥 <b>${esc(sh.name)}</b> takes <b>${n}</b> hull damage → ${sh.hull}/${sh.hullMax}`;
+            if (n >= Math.max(1, Math.round(sh.hullMax * 0.1))) msg += ` · Heavy hit! Consider a 🎲 critical.`;
+        } else {
+            sh.hull = Math.min(sh.hullMax, sh.hull + n);
+            msg = `🔧 <b>${esc(sh.name)}</b> repairs <b>${n}</b> hull → ${sh.hull}/${sh.hullMax}`;
+        }
+        const after = shipState(sh);
+        if (after.key !== before.key) msg += `<br>⚠️ Ship is now <b>${after.label}</b>. ${after.text}`;
+        shipPush(msg);
+    }
+    function shipUndo() {
+        if (!gmOnly()) return;
+        const sh = ensureShip();
+        const last = (sh.history || []).pop();
+        if (!last) return;
+        sh.hull = last.hull; sh.crew = last.crew;
+        shipPush(`↩ Ship restored to hull ${sh.hull}/${sh.hullMax}, crew ${sh.crew}.`);
+    }
+    function shipCrew(d) {
+        if (!gmOnly()) return;
+        const sh = ensureShip();
+        shipSnapshot(sh);
+        sh.crew = Math.max(0, Math.min(sh.crewMax, sh.crew + d));
+        let msg = `👥 Crew ${d < 0 ? "lost" : "gained"} ${Math.abs(d)} → <b>${sh.crew}</b> (min ${sh.crewMin})`;
+        if (sh.crew < sh.crewMin) msg += " · ⚠️ undermanned";
+        shipPush(msg);
+    }
+    function shipToggleHelm() {
+        if (!gmOnly()) return;
+        const sh = ensureShip();
+        sh.helmOk = !sh.helmOk;
+        shipPush(sh.helmOk ? `🧭 Helm working again.` : `🧭 <b>Helm disabled</b> – the ship is adrift!`);
+    }
+    function shipEndDay() {
+        if (!gmOnly()) return;
+        const sh = ensureShip();
+        sh.day++; sh.air = Math.max(0, sh.air - 1); sh.food = Math.max(0, sh.food - 1);
+        let msg = `🌌 Day ${sh.day}: air ${sh.air}d · food ${sh.food}d`;
+        if (sh.air <= 2) msg += " · ⚠️ <b>air is running low!</b>";
+        if (sh.food <= 2) msg += " · ⚠️ food is running low!";
+        shipPush(msg);
+    }
+    function shipSupply(key, d) {
+        if (!gmOnly()) return;
+        const sh = ensureShip();
+        sh[key] = Math.max(0, (sh[key] || 0) + d);
+        shipPush("");
+    }
+    function shipWeaponState(id) {
+        if (!gmOnly()) return;
+        const w = ensureShip().weapons.find(x => x.id === id);
+        if (!w) return;
+        w.state = w.state === "ok" ? "damaged" : w.state === "damaged" ? "destroyed" : "ok";
+        shipPush(`🔧 ${esc(w.name)}: <b>${w.state === "ok" ? "operational" : w.state}</b>`);
+    }
+    function shipFire(id) {
+        if (!gmOnly()) return;
+        const sh = ensureShip();
+        const w = sh.weapons.find(x => x.id === id);
+        if (!w) return;
+        if (w.state === "destroyed") { logAction(`❌ ${esc(w.name)} is destroyed.`); return; }
+        if (w.ammoMax > 0 && w.ammo <= 0) { logAction(`❌ ${esc(w.name)} is out of ammunition.`); return; }
+        const atk = Math.floor(Math.random() * 20) + 1;
+        let dmgTxt = "set damage dice with ✎ Edit";
+        if (w.dmg && /d\d+/i.test(w.dmg)) {
+            const d = parseDice(w.dmg);
+            let sum = 0; const rolls = [];
+            for (let i = 0; i < d.n; i++) { const r = Math.floor(Math.random() * d.sides) + 1; rolls.push(r); sum += r; }
+            dmgTxt = `<b>${Math.max(0, sum + d.bonus)}</b> damage (${d.n}d${d.sides}${d.bonus ? signed(d.bonus) : ""}: ${rolls.join("+")})`;
+        }
+        if (w.ammoMax > 0) w.ammo = Math.max(0, w.ammo - 1);
+        const crit = atk === 20 ? " ✨ NAT 20" : atk === 1 ? " 💨 NAT 1" : "";
+        shipPush(`🎯 <b>${esc(w.name)}</b>${w.state === "damaged" ? " (damaged)" : ""}: d20 = <b>${atk}</b>${crit} · ${dmgTxt}`);
+    }
+    function shipRollCrit() {
+        if (!gmOnly()) return;
+        const sh = ensureShip();
+        const r = Math.floor(Math.random() * 10) + 1;
+        const name = SHIP_CRITS[r - 1];
+        let extra = "";
+        const pickWeapon = (state) => {
+            const pool = sh.weapons.filter(w => w.state === state);
+            return pool.length ? pool[Math.floor(Math.random() * pool.length)] : null;
+        };
+        const addIssue = (text, kind) => { sh.issues.push({ id: "i" + Date.now() + Math.floor(Math.random() * 99), text, fixed: false, kind: kind || "" }); };
+        const d6 = () => Math.floor(Math.random() * 6) + 1;
+        if (r === 1) { if (sh.helmOk) addIssue("Helm disabled – ship adrift", "helm"); sh.helmOk = false; extra = "Helm is out; ship is adrift until repaired."; }
+        else if (r === 2) { const w = pickWeapon("ok") || pickWeapon("damaged"); if (w) { w.state = "destroyed"; extra = `${esc(w.name)} destroyed.`; addIssue(`${w.name} destroyed`, "weapon:" + w.id); } else { const n = d6(); sh.hull = Math.max(0, sh.hull - n); extra = `No weapons left to hit – ${n} extra hull damage.`; } }
+        else if (r === 3) { const w = pickWeapon("ok"); if (w) { w.state = "damaged"; extra = `${esc(w.name)} damaged.`; addIssue(`${w.name} damaged`, "weapon:" + w.id); } else extra = "Nothing left to damage."; }
+        else if (r === 4) { addIssue("Fire on deck – 1d6 hull damage each round until put out", "fire"); extra = "A fire breaks out! 1d6 hull damage each round until it's put out."; }
+        else if (r === 5) { sh.air = Math.max(0, sh.air - 1); addIssue("Air leak – losing air faster", "air"); extra = "Hull breach is venting air (−1 day of air)."; }
+        else if (r === 6) { const n = d6() + d6(); sh.crew = Math.max(0, sh.crew - n); extra = `${n} crew killed or wounded → ${sh.crew}.`; }
+        else if (r === 7) { sh.mcHit = (sh.mcHit || 0) + 1; addIssue("Control damage – one worse Maneuver Class", "mc"); extra = "Steering damaged: one worse Maneuver Class."; }
+        else if (r === 8) { const n = d6() + d6(); sh.hull = Math.max(0, sh.hull - n); extra = `Hull breach: ${n} extra hull damage → ${sh.hull}/${sh.hullMax}.`; }
+        else if (r === 9) { sh.food = Math.max(0, sh.food - 2); extra = "Supplies ruined (−2 days of food)."; }
+        else extra = "Only a glancing blow.";
+        shipPush(`🎲 <b>Critical (d10 = ${r})</b>: ${name}. ${extra}`);
+    }
+    function shipFixIssue(id) {
+        if (!gmOnly()) return;
+        const sh = ensureShip();
+        const it = sh.issues.find(x => x.id === id);
+        if (!it) return;
+        it.fixed = !it.fixed;
+        const k = it.kind || "";
+        if (k === "helm") sh.helmOk = it.fixed ? true : false;
+        else if (k === "mc") sh.mcHit = Math.max(0, (sh.mcHit || 0) + (it.fixed ? -1 : 1));
+        else if (k.startsWith("weapon:")) { const w = sh.weapons.find(x => x.id === k.slice(7)); if (w) w.state = it.fixed ? "ok" : w.state; }
+        shipPush(`${it.fixed ? "🔧 Repaired" : "↩ Reopened"}: ${esc(it.text)}`);
+    }
+    function shipAddIssue() {
+        if (!gmOnly()) return;
+        const inp = document.getElementById("shipIssueTxt");
+        const t = cleanName(inp && inp.value);
+        if (!t) return;
+        ensureShip().issues.push({ id: "i" + Date.now(), text: t, fixed: false, kind: "" });
+        shipPush("");
+    }
+    function shipClearFixed() {
+        if (!gmOnly()) return;
+        const sh = ensureShip();
+        sh.issues = sh.issues.filter(i => !i.fixed);
+        shipPush("");
+    }
+    function shipToggleEdit() { shipEdit = !shipEdit; renderShip(); }
+    function shipSetField(k, v, kind) {
+        if (!gmOnly()) return;
+        const sh = ensureShip();
+        if (kind === "num") sh[k] = numVal(v, 0, 99999, sh[k]);
+        else if (kind === "bool") sh[k] = !!v;
+        else sh[k] = cleanName(v) || sh[k];
+        if (sh.hull > sh.hullMax) sh.hull = sh.hullMax;
+        if (sh.crew > sh.crewMax) sh.crew = sh.crewMax;
+        shipPush("");
+    }
+    function shipSetWeapon(id, k, v, kind) {
+        if (!gmOnly()) return;
+        const w = ensureShip().weapons.find(x => x.id === id);
+        if (!w) return;
+        w[k] = kind === "num" ? numVal(v, 0, 999, w[k]) : cleanName(v);
+        if (w.ammo > w.ammoMax) w.ammo = w.ammoMax;
+        shipPush("");
+    }
+    function shipAddWeapon() {
+        if (!gmOnly()) return;
+        ensureShip().weapons.push({ id: "w" + Date.now(), name: "New weapon", dmg: "", crew: 0, ammo: 0, ammoMax: 0, state: "ok" });
+        shipPush("");
+    }
+    function shipDelWeapon(id) {
+        if (!gmOnly()) return;
+        const sh = ensureShip();
+        sh.weapons = sh.weapons.filter(w => w.id !== id);
+        shipPush("");
+    }
+    function shipReset() {
+        if (!gmOnly()) return;
+        if (!confirm("Reset the ship to a fresh Hammership? This replaces all ship data.")) return;
+        ship = defaultShip();
+        shipPush("🚀 Ship reset to a fresh Hammership.");
+    }
+
+    // ---- fleet: several ships, one active at a time ----
+    function shipNew(kind) {
+        if (!gmOnly()) return;
+        const inp = document.getElementById("shipNewName");
+        const nm = cleanName(inp && inp.value) || "";
+        const cur = ensureShip();
+        let nu;
+        if (kind === "hammer") nu = defaultShip();
+        else if (kind === "copy") { nu = JSON.parse(JSON.stringify(cur)); nu.id = "s" + Date.now(); nu.issues = []; nu.history = []; nu.cargo = []; nu.hull = nu.hullMax; }
+        else nu = blankShip(nm);
+        if (nm) nu.name = nm; else if (kind === "hammer") nu.name = "Hammership";
+        shipBench.push(cur);
+        ship = normShip(nu);
+        shipMgr = false;
+        shipPush(`🚢 New ship <b>${esc(ship.name)}</b> is now the active ship. <b>${esc(cur.name)}</b> is parked.`);
+    }
+    function shipSwitch(id) {
+        if (!gmOnly()) return;
+        const cur = ensureShip();
+        if (id === cur.id) return;
+        const i = shipBench.findIndex(x => x.id === id);
+        if (i < 0) return;
+        const nxt = shipBench.splice(i, 1)[0];
+        shipBench.push(cur);
+        ship = normShip(nxt);
+        shipPush(`🚢 Now sailing <b>${esc(ship.name)}</b>. <b>${esc(cur.name)}</b> is parked.`);
+    }
+    function shipRemoveParked(id) {
+        if (!gmOnly()) return;
+        const sh = shipBench.find(x => x.id === id);
+        if (!sh || !confirm(`Remove "${sh.name}" for good? Its cargo and upgrades go with it.`)) return;
+        shipBench = shipBench.filter(x => x.id !== id);
+        shipPush(`🗑 ${esc(sh.name)} removed from the fleet.`);
+    }
+    function shipToggleMgr() { shipMgr = !shipMgr; renderShip(); }
+
+    // ---- cargo, upgrades and purchases ----
+    const EFFECT_LABELS = { "": "no stat change", hullMax: "max hull", ar: "armor", sr: "ship rating", crewMax: "max crew", cargoMax: "cargo space (tons)" };
+    function applyEffect(sh, eff, dir) {
+        if (!eff || !eff.k || !eff.n) return;
+        const d = eff.n * dir;
+        sh[eff.k] = Math.max(0, (sh[eff.k] || 0) + d);
+        if (eff.k === "hullMax") sh.hull = Math.max(0, Math.min(sh.hullMax, sh.hull + d));
+    }
+    function ciKindChanged() {
+        const k = (document.getElementById("ciKind") || {}).value;
+        const show = (id, on) => { const e = document.getElementById(id); if (e) e.classList.toggle("hidden", !on); };
+        show("ciWeaponRow", k === "weapon");
+        show("ciEffectRow", k === "upgrade");
+        show("ciTonsWrap", k === "cargo" || k === "gear");
+    }
+    function shipAddItem() {
+        if (!gmOnly()) return;
+        const sh = ensureShip();
+        const val = id => { const e = document.getElementById(id); return e ? e.value : ""; };
+        const name = cleanName(val("ciName"));
+        if (!name) { logAction("⚠️ Give the item a name first."); return; }
+        const kind = val("ciKind") || "cargo";
+        const qty = Math.max(1, numVal(val("ciQty"), 1, 9999, 1));
+        const tons = Math.max(0, parseFloat(val("ciTons")) || 0);
+        const cost = Math.max(0, numVal(val("ciCost"), 0, 99999999, 0));
+        const deduct = (document.getElementById("ciDeduct") || {}).checked;
+        const it = { id: "c" + Date.now() + Math.floor(Math.random() * 99), name, kind, qty, tons: (kind === "cargo" || kind === "gear") ? tons : 0, cost };
+        let msg = `🛒 ${kind === "cargo" ? "Loaded" : "Bought"} <b>${qty > 1 ? qty + "× " : ""}${esc(name)}</b>`;
+        if (kind === "weapon") {
+            const w = { id: "w" + Date.now(), name, dmg: cleanName(val("ciDmg")), crew: numVal(val("ciWCrew"), 0, 99, 0), ammo: 0, ammoMax: numVal(val("ciAmmo"), 0, 999, 0), state: "ok" };
+            w.ammo = w.ammoMax;
+            sh.weapons.push(w);
+            it.weaponId = w.id;
+            msg += " – mounted on the ship";
+        } else if (kind === "upgrade") {
+            const k = val("ciEffK"), n = numVal(val("ciEffN"), 0, 9999, 0);
+            if (k && n) { it.eff = { k, n }; applyEffect(sh, it.eff, 1); msg += ` (+${n} ${EFFECT_LABELS[k]})`; }
+        }
+        if (cost > 0) {
+            const total = cost * (kind === "weapon" || kind === "upgrade" ? 1 : qty);
+            it.cost = total;
+            if (deduct) { sh.gp = Math.max(0, sh.gp - total); msg += ` for ${total.toLocaleString()} gp (paid from ship funds → ${sh.gp.toLocaleString()} gp)`; }
+            else msg += ` · ${total.toLocaleString()} gp`;
+        }
+        sh.cargo.push(it);
+        shipPush(msg);
+    }
+    function shipItemQty(id, d) {
+        if (!gmOnly()) return;
+        const it = ensureShip().cargo.find(x => x.id === id);
+        if (!it) return;
+        it.qty = Math.max(1, it.qty + d);
+        shipPush("");
+    }
+    function shipRemoveItem(id, refund) {
+        if (!gmOnly()) return;
+        const sh = ensureShip();
+        const it = sh.cargo.find(x => x.id === id);
+        if (!it) return;
+        applyEffect(sh, it.eff, -1);
+        if (it.weaponId) sh.weapons = sh.weapons.filter(w => w.id !== it.weaponId);
+        sh.cargo = sh.cargo.filter(x => x.id !== id);
+        let msg = `🗑 ${esc(it.name)} removed`;
+        if (refund && it.cost) { const g = Math.floor(it.cost / 2); sh.gp += g; msg = `💰 Sold ${esc(it.name)} for ${g.toLocaleString()} gp (half price) → ${sh.gp.toLocaleString()} gp`; }
+        shipPush(msg);
+    }
+    function shipSetFunds(v) {
+        if (!gmOnly()) return;
+        ensureShip().gp = numVal(v, 0, 999999999, 0);
+        shipPush("");
+    }
+
+    function renderShip() {
+        const el = document.getElementById("shipPanel");
+        if (!el) return;
+        if (activeTab !== "ship") return;
+        if (!ship && !gmMode) {
+            el.innerHTML = `<div class="sh-card"><div class="sh-effect">The GM hasn't set up a ship yet.</div></div>`;
+            return;
+        }
+        const sh = ensureShip();
+        const ef = shipEffective(sh);
+        const used = sh.cargo.filter(i => i.kind === "cargo" || i.kind === "gear").reduce((a, i) => a + i.qty * i.tons, 0);
+        const spent = sh.cargo.reduce((a, i) => a + (i.cost || 0), 0);
+        const allShips = [sh].concat(shipBench);
+        const pct = sh.hullMax > 0 ? Math.max(0, Math.min(100, (sh.hull / sh.hullMax) * 100)) : 0;
+        const gm = gmMode;
+        const g = (html) => gm ? html : "";
+
+        const mgrHtml = (gm && shipMgr) ? `<div class="sh-card sh-wide">
+            <div class="sh-title"><span>Fleet</span><span>${allShips.length} ship${allShips.length > 1 ? "s" : ""}</span></div>
+            ${shipBench.length ? shipBench.map(x => `<div class="sh-issue"><span class="t">🚢 ${esc(x.name)} <span class="text-muted">· hull ${x.hull}/${x.hullMax}</span></span><button class="btn-indigo" onclick="shipSwitch('${esc(x.id)}')">Sail</button><button class="btn-red btn-icon" onclick="shipRemoveParked('${esc(x.id)}')" title="Remove from fleet">🗑</button></div>`).join("") : `<div class="sh-effect">No parked ships yet.</div>`}
+            <div class="sh-title" style="margin-top:4px;"><span>Get a new ship</span></div>
+            <input type="text" id="shipNewName" placeholder="Name (optional)">
+            <div class="sh-row">
+                <button class="btn-amber" onclick="shipNew('blank')" title="Empty ship – fill in the stats with ✎ Edit ship">＋ Blank ship</button>
+                <button class="btn-gm-off" onclick="shipNew('hammer')">＋ Hammership</button>
+                <button class="btn-gm-off" onclick="shipNew('copy')" title="Same stats as the current ship (same class)">＋ Copy current</button>
+            </div>
+            <div class="sh-effect">The new ship becomes active; the old one is parked with its damage, cargo and upgrades intact. Switch any time from the ship menu.</div>
+        </div>` : "";
+
+        let html = mgrHtml + `
+        <div class="sh-card sh-wide">
+            <div class="sh-title"><span class="sh-name">${esc(sh.name)}</span><span class="sh-state st-${ef.st.key}">${ef.st.label}</span></div>
+            ${g(`<div class="sh-row">
+                <select onchange="shipSwitch(this.value)" style="flex:1; min-width:0;" aria-label="Active ship">${allShips.map(x => `<option value="${esc(x.id)}" ${x.id === sh.id ? "selected" : ""}>🚢 ${esc(x.name)}</option>`).join("")}</select>
+                <button class="${shipMgr ? "btn-indigo" : "btn-gm-off"}" onclick="shipToggleMgr()" title="Add a new ship or manage the fleet">＋ Ships</button>
+            </div>`)}
+            <div class="sh-hull st-${ef.st.key}"><div class="fill" style="width:${pct}%"></div><span>Hull ${sh.hull} / ${sh.hullMax}</span></div>
+            <div class="sh-effect">${esc(ef.st.text)}${sh.penalties ? "" : " (penalties off)"}</div>
+            ${g(`<div class="sh-row">
+                <input type="number" min="1" value="${readAmt()}" oninput="shipAmt=this.value" style="width:64px;" aria-label="Amount">
+                <button class="btn-red" onclick="shipHit(-1)">💥 Damage</button>
+                <button class="btn-emerald-outline" onclick="shipHit(1)">🔧 Repair</button>
+                <button class="btn-indigo" onclick="shipRollCrit()" title="Roll on the critical-hit table">🎲 Critical</button>
+                <button class="btn-gm-off" onclick="shipUndo()" title="Undo last hull / crew change" ${(sh.history || []).length ? "" : "disabled"}>↩</button>
+            </div>`)}
+        </div>
+
+        <div class="sh-card">
+            <div class="sh-title"><span>Flight</span>${g(`<button class="${sh.helmOk ? "btn-gm-off" : "btn-red"}" onclick="shipToggleHelm()">🧭 Helm: ${sh.helmOk ? "OK" : "DISABLED"}</button>`)}</div>
+            <div class="sh-stats">
+                <div class="sh-stat"><span class="lbl">Ship Rating</span><span class="val ${ef.sr < sh.sr ? "bad" : ""}">${ef.sr}${ef.sr < sh.sr ? ` <small style="color:var(--muted)">/${sh.sr}</small>` : ""}</span></div>
+                <div class="sh-stat"><span class="lbl">Maneuver</span><span class="val ${ef.mc !== sh.mc ? "bad" : ""}">${ef.mc}${ef.mc !== sh.mc && ef.mc !== "—" ? ` <small style="color:var(--muted)">/${sh.mc}</small>` : ""}</span></div>
+                <div class="sh-stat"><span class="lbl">Armor</span><span class="val">${sh.ar}</span></div>
+                <div class="sh-stat"><span class="lbl">Tons</span><span class="val">${sh.tons}</span></div>
+            </div>
+            ${!sh.helmOk ? `<div class="sh-warn">🧭 The helm is out – the ship is adrift and can't maneuver.</div>` : ""}
+            <div class="sh-effect">${esc(sh.helm)} helm</div>
+        </div>
+
+        <div class="sh-card">
+            <div class="sh-title"><span>Crew</span><span>min ${sh.crewMin} · max ${sh.crewMax}</span></div>
+            <div class="sh-row" style="justify-content:space-between;">
+                <span class="sh-name" style="color:${ef.under ? "#f87171" : "#e5e7eb"}">${sh.crew}</span>
+                ${g(`<span class="row-center"><button class="btn-gm-off" onclick="shipCrew(-5)">−5</button><button class="btn-gm-off" onclick="shipCrew(-1)">−1</button><button class="btn-gm-off" onclick="shipCrew(1)">+1</button><button class="btn-gm-off" onclick="shipCrew(5)">+5</button></span>`)}
+            </div>
+            ${ef.under ? `<div class="sh-warn">⚠️ Undermanned: not enough crew for every station${sh.penalties ? " (−1 SR)" : ""}.</div>` : ""}
+        </div>
+
+        <div class="sh-card sh-wide">
+            <div class="sh-title"><span>Weapons</span>${g(`<button class="btn-ghost" onclick="shipToggleEdit()">${shipEdit ? "✔ Done" : "✎ Edit ship"}</button>`)}</div>
+            ${sh.weapons.length ? sh.weapons.map(w => {
+                const ammo = w.ammoMax > 0 ? `${w.ammo}/${w.ammoMax} ammo` : "";
+                const meta = [w.dmg ? esc(w.dmg) : "", w.crew ? `crew ${w.crew}` : "", ammo, w.state !== "ok" ? `<b>${w.state}</b>` : ""].filter(Boolean).join(" · ");
+                if (gm && shipEdit) {
+                    return `<div class="sh-weapon">
+                        <input class="wn" type="text" value="${esc(w.name)}" onchange="shipSetWeapon('${w.id}','name',this.value)" aria-label="Name">
+                        <input type="text" value="${esc(w.dmg)}" placeholder="dmg 3d6" onchange="shipSetWeapon('${w.id}','dmg',this.value)" style="width:70px;" aria-label="Damage dice">
+                        <input type="number" value="${w.crew}" onchange="shipSetWeapon('${w.id}','crew',this.value,'num')" style="width:52px;" title="Crew needed" aria-label="Crew">
+                        <input type="number" value="${w.ammoMax}" onchange="shipSetWeapon('${w.id}','ammoMax',this.value,'num')" style="width:56px;" title="Max ammo (0 = unlimited)" aria-label="Max ammo">
+                        <button class="btn-red btn-icon" onclick="shipDelWeapon('${w.id}')" title="Remove">🗑</button>
+                    </div>`;
+                }
+                return `<div class="sh-weapon ${w.state === "destroyed" ? "broken" : ""}">
+                    <div class="wn">${esc(w.name)}<div class="wm">${meta || "—"}</div></div>
+                    ${g(`<button class="btn-amber" onclick="shipFire('${w.id}')" ${w.state === "destroyed" ? "disabled" : ""}>🎯 Fire</button>
+                    <button class="btn-gm-off btn-icon" onclick="shipWeaponState('${w.id}')" title="Cycle: operational → damaged → destroyed">🔧</button>
+                    ${w.ammoMax > 0 ? `<button class="btn-gm-off btn-icon" onclick="shipSetWeapon('${w.id}','ammo',${w.ammoMax},'num')" title="Reload to full">⟳</button>` : ""}`)}
+                </div>`;
+            }).join("") : `<div class="sh-effect">No weapons.</div>`}
+            ${gm && shipEdit ? `<button class="btn-gm-off" onclick="shipAddWeapon()">+ Add weapon</button>` : ""}
+        </div>
+
+        <div class="sh-card">
+            <div class="sh-title"><span>Voyage</span><span>Day ${sh.day}</span></div>
+            <div class="sh-grid2">
+                <div class="sh-stat"><span class="lbl">Air (days)</span><span class="val ${sh.air <= 2 ? "bad" : ""}">${sh.air}</span>
+                    ${g(`<div class="row-center" style="justify-content:center;"><button class="btn-gm-off" onclick="shipSupply('air',-1)">−</button><button class="btn-gm-off" onclick="shipSupply('air',1)">+</button></div>`)}</div>
+                <div class="sh-stat"><span class="lbl">Food (days)</span><span class="val ${sh.food <= 2 ? "bad" : ""}">${sh.food}</span>
+                    ${g(`<div class="row-center" style="justify-content:center;"><button class="btn-gm-off" onclick="shipSupply('food',-1)">−</button><button class="btn-gm-off" onclick="shipSupply('food',1)">+</button></div>`)}</div>
+            </div>
+            ${g(`<button class="btn-indigo" onclick="shipEndDay()">🌌 End of day (−1 air, −1 food)</button>`)}
+        </div>
+
+        <div class="sh-card sh-wide">
+            <div class="sh-title"><span>Cargo, gear &amp; upgrades</span><span>${used % 1 ? used.toFixed(1) : used}/${sh.cargoMax} tons</span></div>
+            <div class="sh-row" style="justify-content:space-between;">
+                <span class="text-muted">Ship funds</span>
+                ${gm ? `<input type="number" min="0" value="${sh.gp}" onchange="shipSetFunds(this.value)" style="width:110px;" aria-label="Ship funds in gp"> gp` : `<b>${sh.gp.toLocaleString()} gp</b>`}
+            </div>
+            ${used > sh.cargoMax ? `<div class="sh-warn">⚠️ Overloaded by ${(used - sh.cargoMax).toFixed(1).replace(/\.0$/, "")} tons.</div>` : ""}
+            ${sh.cargo.length ? sh.cargo.map(it => `<div class="sh-issue">
+                <span class="t"><b>${it.qty > 1 ? it.qty + "× " : ""}${esc(it.name)}</b>
+                    <span class="text-muted">· ${{ cargo: "cargo", gear: "gear", upgrade: "upgrade", weapon: "weapon" }[it.kind] || it.kind}${it.tons ? ` · ${it.tons * it.qty}t` : ""}${it.eff ? ` · +${it.eff.n} ${EFFECT_LABELS[it.eff.k]}` : ""}${it.cost ? ` · ${it.cost.toLocaleString()} gp` : ""}</span></span>
+                ${g(`${(it.kind === "cargo" || it.kind === "gear") ? `<button class="btn-gm-off btn-icon" onclick="shipItemQty('${it.id}',-1)">−</button><button class="btn-gm-off btn-icon" onclick="shipItemQty('${it.id}',1)">+</button>` : ""}
+                ${it.cost ? `<button class="btn-gm-off btn-icon" onclick="shipRemoveItem('${it.id}',true)" title="Sell for half price">💰</button>` : ""}
+                <button class="btn-red btn-icon" onclick="shipRemoveItem('${it.id}',false)" title="Remove (no refund)">✕</button>`)}
+            </div>`).join("") + (spent ? `<div class="sh-effect">Total spent: ${spent.toLocaleString()} gp</div>` : "") : `<div class="sh-effect">Nothing aboard yet.</div>`}
+            ${g(`<div class="sh-title" style="margin-top:4px;"><span>Add / buy</span></div>
+            <div class="sh-row">
+                <input type="text" id="ciName" placeholder="Item name" style="flex:1 1 120px; min-width:0;">
+                <select id="ciKind" onchange="ciKindChanged()" style="width:auto;"><option value="cargo">📦 Cargo</option><option value="gear">🧰 Gear</option><option value="weapon">🏹 Weapon</option><option value="upgrade">🛠 Upgrade</option></select>
+            </div>
+            <div class="sh-row">
+                <label class="text-muted">Qty <input type="number" id="ciQty" min="1" value="1" style="width:56px;"></label>
+                <label class="text-muted" id="ciTonsWrap">Tons each <input type="number" id="ciTons" min="0" step="0.1" value="0" style="width:64px;"></label>
+                <label class="text-muted">Cost gp <input type="number" id="ciCost" min="0" value="0" style="width:84px;"></label>
+            </div>
+            <div class="sh-row hidden" id="ciWeaponRow">
+                <input type="text" id="ciDmg" placeholder="Damage (e.g. 3d6)" style="width:110px;">
+                <label class="text-muted">Crew <input type="number" id="ciWCrew" min="0" value="0" style="width:52px;"></label>
+                <label class="text-muted">Ammo <input type="number" id="ciAmmo" min="0" value="0" style="width:56px;"></label>
+            </div>
+            <div class="sh-row hidden" id="ciEffectRow">
+                <span class="text-muted">Gives</span>
+                <select id="ciEffK" style="width:auto;">${Object.keys(EFFECT_LABELS).map(k => `<option value="${k}">${EFFECT_LABELS[k]}</option>`).join("")}</select>
+                <span class="text-muted">+</span><input type="number" id="ciEffN" min="0" value="0" style="width:60px;">
+            </div>
+            <label class="chip" style="cursor:pointer;"><input type="checkbox" id="ciDeduct"> Pay from ship funds</label>
+            <button class="btn-amber" onclick="shipAddItem()">🛒 Add to ship</button>`)}
+        </div>
+
+        <div class="sh-card">
+            <div class="sh-title"><span>Damage &amp; repairs</span>${g(`<button class="btn-ghost" onclick="shipClearFixed()">Clear repaired</button>`)}</div>
+            ${sh.issues.length ? sh.issues.map(it => `<div class="sh-issue ${it.fixed ? "fixed" : ""}"><span class="t">${esc(it.text)}</span>${g(`<button class="btn-gm-off btn-icon" onclick="shipFixIssue('${it.id}')" title="${it.fixed ? "Reopen" : "Mark repaired"}">${it.fixed ? "↩" : "🔧"}</button>`)}</div>`).join("") : `<div class="sh-effect">Nothing broken. Yet.</div>`}
+            ${g(`<div class="sh-row"><input type="text" id="shipIssueTxt" placeholder="Add a problem (e.g. mast cracked)" style="flex:1;" onkeydown="if(event.key==='Enter')shipAddIssue()"><button class="btn-gm-off" onclick="shipAddIssue()">+</button></div>`)}
+        </div>`;
+
+        if (gm && shipEdit) {
+            const f = (label, k, kind, extra) => `<label>${label}<input type="${kind === "num" ? "number" : "text"}" value="${esc(sh[k])}" onchange="shipSetField('${k}', this.value, '${kind}')" ${extra || ""}></label>`;
+            html += `<div class="sh-card sh-wide">
+                <div class="sh-title"><span>Ship settings</span></div>
+                <div class="sh-edit-grid">
+                    ${f("Name", "name", "text")} ${f("Type", "type", "text")} ${f("Tons", "tons", "num")}
+                    ${f("Max hull", "hullMax", "num")} ${f("Hull now", "hull", "num")} ${f("Armor", "ar", "num")}
+                    ${f("Ship Rating", "sr", "num")} ${f("Cargo tons", "cargoMax", "num")} ${f("Crew now", "crew", "num")} ${f("Min crew", "crewMin", "num")} ${f("Max crew", "crewMax", "num")}
+                    <label>Maneuver class<select onchange="shipSetField('mc', this.value, 'text')">${MC_ORDER.map(c => `<option ${c === sh.mc ? "selected" : ""}>${c}</option>`).join("")}</select></label>
+                    <label>Helm<select onchange="shipSetField('helm', this.value, 'text')">${["Minor", "Major", "Lifejammer"].map(c => `<option ${c === sh.helm ? "selected" : ""}>${c}</option>`).join("")}</select></label>
+                </div>
+                <label class="chip" style="cursor:pointer;"><input type="checkbox" ${sh.penalties ? "checked" : ""} onchange="shipSetField('penalties', this.checked, 'bool')"> Damage penalties to speed &amp; maneuver (house rule)</label>
+                <div class="sh-effect">Stats start as a Hammership (60 tons, 60 hull, crew 24–60, class D). Check Ship Rating, weapon damage and ammo against your book.</div>
+                <button class="btn-red" onclick="shipReset()">Reset to a fresh Hammership</button>
+            </div>`;
+        }
+        // keep the scroll position while re-rendering
+        const top = el.scrollTop;
+        el.innerHTML = html;
+        el.scrollTop = top;
     }
 
     function gmOnly() {
@@ -2069,7 +2669,7 @@ async function applyTokenVisibility(ent) {
         const box = document.getElementById("diagBox");
         if (!box) return;
         box.classList.remove("hidden");
-        const lines = ["Version: v19.1", "Inside Owlbear: " + (isObrConnected ? "yes" : "no (browser mode)"), "GM permissions: " + (gmMode ? "yes" : "no (player view)")];
+        const lines = ["Version: v21", "Inside Owlbear: " + (isObrConnected ? "yes" : "no (browser mode)"), "GM permissions: " + (gmMode ? "yes" : "no (player view)")];
         if (isObrConnected && OBR_SDK) {
             try { lines.push("Owlbear role: " + await OBR_SDK.player.getRole()); } catch (e) { lines.push("Role lookup failed: " + (e && e.message || e)); }
             try { await refreshParty(); lines.push("Players found: " + partyPlayers.map(x => x.name).join(", ")); } catch (e) { lines.push("Player lookup failed: " + (e && e.message || e)); }
@@ -2547,7 +3147,7 @@ async function applyTokenVisibility(ent) {
 
     function exportRosterJson() {
         if (!gmOnly()) return;
-        const blob = new Blob([JSON.stringify({ entities, combatXpPool, currentRound }, null, 2)], { type: "application/json" });
+        const blob = new Blob([JSON.stringify({ entities, combatXpPool, currentRound, ship, shipBench }, null, 2)], { type: "application/json" });
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
@@ -2567,7 +3167,10 @@ async function applyTokenVisibility(ent) {
                     entities = data.entities.map(e => Object.assign(e, { name: cleanName(e.name) || "Unknown" }));
                     combatXpPool = data.combatXpPool || 0;
                     currentRound = data.currentRound || 1;
+                    if (data.ship) ship = data.ship;
+                    shipBench = data.shipBench || [];
                     syncState();
+                    renderShip();
                     renderRoster();
                     logAction("📂 Roster backup imported successfully!");
                 }
@@ -2608,6 +3211,8 @@ async function applyTokenVisibility(ent) {
     buildStatusChecks();
     loadLocalState();
     renderRoster();
+    if (ship) normShip(ship); shipBench.forEach(normShip);
+    try { const t = localStorage.getItem("add2e_tab"); if (t === "ship") setTab("ship"); } catch (e) {}
 
     (async function initObr() {
         try {
@@ -2624,8 +3229,8 @@ async function applyTokenVisibility(ent) {
                     const dot = document.getElementById("obrStatusDot");
                     const txt = document.getElementById("obrStatusText");
                     if (dot) dot.classList.add("connected");
-                    if (txt) txt.innerText = "OBR Room Connected · v19.1 badges";
-                    if (dot) dot.title = "OBR Room Connected · v19.1 badges";
+                    if (txt) txt.innerText = "OBR Room Connected · v21 badges";
+                    if (dot) dot.title = "OBR Room Connected · v21 badges";
                     const sizeRow = document.getElementById("sizeRow");
                     if (sizeRow) sizeRow.classList.remove("hidden");
                     if (ui.size) applyPanelSize(); else ensureMinPanelSize();
@@ -2642,7 +3247,10 @@ async function applyTokenVisibility(ent) {
                         combatXpPool = meta[META_KEY].combatXpPool || 0;
                         currentRound = meta[META_KEY].currentRound || 1;
                         activeTurnIndex = meta[META_KEY].activeTurnIndex || 0;
+                        if (meta[META_KEY].ship) ship = meta[META_KEY].ship;
+                        shipBench = meta[META_KEY].shipBench || [];
                         renderRoster();
+                        renderShip();
                     } else if (gmMode) {
                         await syncState();
                     } else {
@@ -2656,7 +3264,10 @@ async function applyTokenVisibility(ent) {
                             combatXpPool = newMeta[META_KEY].combatXpPool || 0;
                             currentRound = newMeta[META_KEY].currentRound || 1;
                             activeTurnIndex = newMeta[META_KEY].activeTurnIndex || 0;
+                            if (newMeta[META_KEY].ship) ship = newMeta[META_KEY].ship;
+                            shipBench = newMeta[META_KEY].shipBench || [];
                             renderRoster();
+                            renderShip();
                         }
                     });
 
