@@ -180,57 +180,227 @@
         .status-badge .x { cursor: pointer; opacity: .7; margin-left: 2px; }
         .status-badge .x:hover { opacity: 1; color: #fff; }
         .note { background: var(--bg2); border: 1px dashed var(--line); border-radius: 8px; padding: 10px; color: var(--muted); font-size: 12px; text-align: center; }
+        /* ================= v19: responsive layout ================= */
+        html, body { height: 100%; overflow: hidden; }
+        body { max-width: none; margin: 0; padding: 0; display: block; }
+        #app {
+            width: calc(100% / var(--ui, 1)); height: calc(100% / var(--ui, 1));
+            transform: scale(var(--ui, 1)); transform-origin: 0 0;
+            display: flex; flex-direction: column; gap: 6px; padding: 8px; overflow: hidden; background: var(--bg);
+        }
+        .spacer { flex: 1; }
+        .topbar { flex: none; display: flex; flex-direction: column; gap: 6px; }
+        .top-row { display: flex; align-items: center; gap: 6px; min-width: 0; }
+        .top-row .title { white-space: nowrap; flex: none; font-size: 14px; }
+        .t-short { display: none; }
+        .top-row button { min-height: 30px; padding: 3px 10px; }
+        .top-row .status-dot { flex: none; }
+        .btn-gm-off.on { background: #4338ca; border-color: #6366f1; color: #fff; }
+
+        /* menu drawer */
+        .tools { background: var(--bg2); border: 1px solid var(--line); border-radius: 8px; padding: 8px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; max-height: calc(var(--effh, 600px) * 0.6); }
+        .tools-group { display: flex; flex-direction: column; gap: 6px; }
+        .tools-title { font-size: 10px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+        .tools-row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+        .tools-row > button, .tools-row > .file-btn { flex: 1 1 auto; }
+        .tools-lbl { min-width: 62px; }
+        .segs { display: flex; flex: 1; align-items: stretch; }
+        .segs button { flex: 1; border-radius: 0; background: var(--bg3); border-color: var(--line); color: var(--text); padding: 3px 8px; min-height: 28px; }
+        .segs button:first-child { border-radius: 6px 0 0 6px; }
+        .segs button:last-child { border-radius: 0 6px 6px 0; }
+        .segs button.on { background: #4338ca; border-color: #6366f1; color: #fff; }
+        .seg-val { flex: 1; text-align: center; background: var(--bg4); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); font-weight: 700; display: flex; align-items: center; justify-content: center; min-width: 48px; }
+        .file-btn { display: inline-flex; align-items: center; justify-content: center; cursor: pointer; border: 1px solid var(--line); border-radius: 6px; font-size: 12px; font-weight: 600; padding: 5px 10px; min-height: 30px; }
+        .tools-foot { border-top: 1px solid var(--line); padding-top: 8px; }
+        .status-line { font-size: 11px; color: var(--muted); }
+        .xp-strip { flex-wrap: wrap; }
+
+        /* turn strip + target chip */
+        .subbar { display: flex; align-items: center; gap: 6px; min-width: 0; }
+        .subbar .turn-strip { flex: 1; min-width: 0; border-bottom: none; padding: 2px; }
+        .turn-strip:empty { display: none; }
+        #targetChip { flex: none; cursor: pointer; }
+
+        /* roster */
+        main#rosterContainer { flex: 1; min-height: 0; overflow-y: auto; padding-right: 2px; }
+        .group-cards { display: block; }
+        .tagrow { display: flex; gap: 3px; flex-wrap: wrap; }
+        .vitals { display: contents; }
+
+        /* log */
+        #pendingBar { flex: none; }
+        #logHistory { flex: none; max-height: calc(var(--effh, 600px) * 0.35); }
+        #actionLog { flex: none; min-height: 0; padding: 5px 8px; font-size: 12px; gap: 8px; border-left-width: 3px; justify-content: space-between; }
+        #actionLogText { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; flex: 1; min-width: 0; }
+        body.log-open #actionLogText { -webkit-line-clamp: unset; }
+        .log-caret { flex: none; color: var(--muted); font-size: 10px; transition: transform .15s; }
+        body.log-open .log-caret { transform: rotate(180deg); }
+
+        /* roomy cards: let the buttons wrap under the name instead of crushing it */
+        body:not(.dense) .card-head { flex-wrap: wrap; }
+        body:not(.dense) .who { min-width: 130px; }
+        body.xs:not(.dense) .actions { width: 100%; justify-content: flex-end; }
+        .edit-head { }
+
+        /* compact cards: two lines each */
+        body.dense .card { padding: 6px 6px 6px 10px; gap: 5px; margin-bottom: 5px; }
+        body.dense .card-head { gap: 6px; flex-wrap: nowrap; }
+        body.dense .avatar { width: 28px; height: 28px; font-size: 13px; border-width: 1px; }
+        body.dense .name { font-size: 13px; }
+        body.dense .sub { font-size: 10px; }
+        body.dense .actions { gap: 3px; }
+        body.dense .btn-icon { min-width: 28px; min-height: 28px; padding: 2px 4px; font-size: 13px; }
+        body.dense .edit-head { display: none; }
+        body.dense .vitals { display: flex; gap: 5px; align-items: stretch; }
+        body.dense .hp { flex: 1; min-width: 0; height: 34px; }
+        body.dense .hp-ico { display: none; }
+        body.dense .hp input, body.dense .hp .hp-text { font-size: 13px; }
+        body.dense .stats { display: flex; gap: 3px; flex: none; }
+        body.dense .stat { width: 36px; padding: 1px 0 2px; border-top-width: 2px; display: flex; flex-direction: column; justify-content: center; }
+        body.dense .stat .lbl { font-size: 8px; }
+        body.dense .stat .val { font-size: 14px; line-height: 1.15; }
+        body.dense .stat input.val { height: 18px; width: 100%; font-size: 14px; }
+        body.dense .turn-pill, body.dense .hidden-pill { display: none; }
+        body.dense .tagrow:not(:has(.status-badge, .you-pill)) { display: none; }
+        body.dense .tagrow { flex-wrap: nowrap; overflow-x: auto; }
+        body.dense .group-header { padding: 3px 4px; font-size: 12px; margin-bottom: 4px; }
+        body.dense .ts-av { width: 26px; height: 26px; font-size: 12px; }
+        body.dense .drawer { padding-top: 6px; gap: 6px; }
+        body.dense .roll-box { font-size: 13px; padding: 3px 1px; }
+
+        /* wide panels: two columns of cards */
+        body.wide .group-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 8px; }
+        body.wide .card { margin-bottom: 0; }
+
+        /* extra-narrow panels */
+        body.xs .t-long { display: none; }
+        body.xs .t-short { display: inline; }
+        body.xs .hide-narrow { display: none; }
+        body.xs .top-row button { padding: 3px 8px; }
+        body.xs .grid-3 { grid-template-columns: repeat(2, 1fr); }
+        body.xs .grid-6 { grid-template-columns: repeat(3, 1fr); }
+
+        /* edit window: full-bleed sheet on small panels, collapsible sections */
+        .sec-head { cursor: pointer; user-select: none; }
+        .sec-title.sec-head { display: flex; justify-content: space-between; align-items: center; }
+        .sec-head::after { content: "▾"; color: var(--muted); margin-left: auto; padding-left: 8px; font-size: 11px; }
+        .sec.collapsed > :not(.sec-head) { display: none; }
+        .sec.collapsed .sec-head::after { content: "▸"; }
+        body.narrow .modal-backdrop { padding: 0; }
+        body.narrow .modal-box { max-width: none; max-height: none; height: 100%; border-radius: 0; border: none; }
+        body.narrow .modal-head, body.narrow .modal-foot { padding: 8px 10px; }
+        body.narrow .modal-body { padding: 8px; gap: 8px; }
+        body.narrow .sec { padding: 6px 8px; gap: 6px; }
+        body.dense .sec-title { font-size: 11px; }
     </style>
 </head>
 <body>
+<div id="app">
 
-<!-- TOP HEADER & CONTROLS -->
+<!-- TOP BAR: always visible, one slim row -->
 <header class="topbar">
-    <div class="row-between">
-        <div class="row-center">
-            <span class="title">⚔️ AD&D 2E GRIMOIRE</span>
-            <span id="roundBadge" onclick="resetRounds()" class="chip" title="Click to reset combat round to Rd 1">Rd 1</span>
+    <div class="top-row">
+        <span class="title"><span class="t-long">⚔️ AD&D 2E GRIMOIRE</span><span class="t-short">⚔️ Grimoire</span></span>
+        <span id="roundBadge" onclick="resetRounds()" class="chip" title="Click to reset combat round to Rd 1">Rd 1</span>
+        <span id="obrStatusDot" class="status-dot" title="Browser Mode (Local Save)"></span>
+        <span class="spacer"></span>
+        <button onclick="nextTurn()" class="btn-indigo gm-only" title="Advance to the next living combatant">⏭️<span class="hide-narrow"> Next</span></button>
+        <button id="undoBtn" onclick="undoLast()" class="btn-gm-off gm-only" title="Undo the last HP change" disabled>↩<span class="hide-narrow"> Undo</span></button>
+        <button id="menuBtn" onclick="toggleTools()" class="btn-gm-off" title="Menu: add, view and display options" aria-expanded="false">☰</button>
+    </div>
+
+    <!-- MENU DRAWER: everything that is not needed every second -->
+    <div id="tools" class="tools hidden">
+        <div class="tools-group gm-only">
+            <div class="tools-title">Add to the roster</div>
+            <div class="tools-row">
+                <button onclick="openAddModal('pc')" class="btn-amber">+ PC</button>
+                <button onclick="openAddModal('npc')" class="btn-blue">+ NPC</button>
+                <button onclick="openAddModal('enemy')" class="btn-red">+ Enemy</button>
+                <button onclick="linkSelectedMapToken()" class="btn-emerald-outline" title="Create an entity from the selected Owlbear Rodeo token">🔗 From Token</button>
+            </div>
         </div>
-        <div class="row-center">
-            <button onclick="linkSelectedMapToken()" class="btn-emerald-outline gm-only" title="Create a new entity from the selected Owlbear Rodeo token">🔗 From Token</button>
+
+        <div class="tools-group gm-only">
+            <div class="tools-title">Combat</div>
+            <div class="tools-row">
+                <button onclick="rollAllInitiative()" class="btn-indigo" title="Roll 1d10 + Speed Factor (lowest acts first)">🎲 Roll Init</button>
+                <button id="revealAllBtn" onclick="revealAllHidden()" class="btn-gm-off" title="Reveal every hidden entity (and its map token) to players">👁 Reveal All</button>
+            </div>
+            <div class="tools-row">
+                <label class="chip" style="cursor:pointer;" title="Pan the map to each combatant when you press Next"><input type="checkbox" id="followTurn" onchange="setFollowTurn(this.checked)">📷 Follow</label>
+                <label class="chip" style="cursor:pointer;" title="Apply hit damage to the target right away"><input type="checkbox" id="autoApply" onchange="setAutoApply(this.checked)">⚡ Auto-apply</label>
+            </div>
+        </div>
+
+        <div class="xp-strip gm-only">
+            <div class="row-center">
+                <span class="text-muted">Combat XP Pool</span>
+                <span id="xpPoolDisplay" class="text-amber" style="font-size:14px;">0 XP</span>
+                <button id="clearXpBtn" onclick="clearXpPool()" class="btn-ghost hidden" title="Clear XP Pool">✕</button>
+            </div>
+            <button id="distributeXpBtn" onclick="distributeXpPool()" class="btn-amber">✨ Distribute to Party</button>
+        </div>
+
+        <div class="tools-group">
+            <div class="tools-title">View</div>
+            <div class="tools-row">
+                <span class="text-muted tools-lbl">Show</span>
+                <select id="groupFilter" onchange="renderRoster()" title="Filter roster" style="width:auto; flex:1; color:#fbbf24; font-weight:700;">
+                    <option value="all">Everyone</option>
+                    <option value="pc">PCs</option>
+                    <option value="npc">NPCs</option>
+                    <option value="enemy">Enemies</option>
+                </select>
+            </div>
+            <div class="tools-row">
+                <span class="text-muted tools-lbl">Cards</span>
+                <div class="segs" id="densitySeg">
+                    <button data-v="auto" onclick="setDensity('auto')" title="Compact on small panels, roomy on big ones">Auto</button>
+                    <button data-v="compact" onclick="setDensity('compact')" title="Two lines per card">Compact</button>
+                    <button data-v="comfy" onclick="setDensity('comfy')" title="Large cards">Roomy</button>
+                </div>
+            </div>
+            <div class="tools-row">
+                <span class="text-muted tools-lbl">Text size</span>
+                <div class="segs">
+                    <button onclick="bumpScale(-1)" title="Smaller">A−</button>
+                    <span id="scaleLbl" class="seg-val">100%</span>
+                    <button onclick="bumpScale(1)" title="Larger">A+</button>
+                </div>
+            </div>
+            <div class="tools-row hidden" id="sizeRow">
+                <span class="text-muted tools-lbl">Panel size</span>
+                <div class="segs" id="sizeSeg">
+                    <button data-v="S" onclick="setPanelSize('S')">S</button>
+                    <button data-v="M" onclick="setPanelSize('M')">M</button>
+                    <button data-v="L" onclick="setPanelSize('L')">L</button>
+                    <button data-v="XL" onclick="setPanelSize('XL')">XL</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="tools-group gm-only">
+            <div class="tools-title">Data</div>
+            <div class="tools-row">
+                <button onclick="syncAllTokensToMap()" class="btn-gm-off" title="Push all linked stat badges to Owlbear Rodeo tokens">🔄 Sync Map Badges</button>
+                <button onclick="exportRosterJson()" class="btn-gm-off">⬇ Export</button>
+                <label class="btn-gm-off file-btn">⬆ Import<input type="file" accept=".json" onchange="importRosterJson(event)" class="hidden"></label>
+            </div>
+        </div>
+
+        <div class="tools-group tools-foot">
             <button onclick="toggleGmMode()" id="gmModeBtn" class="btn-gm-on">🔒 <span id="gmModeText">GM Mode: ON</span></button>
+            <div class="status-line"><span id="obrStatusText">Browser Mode (Local Save)</span></div>
         </div>
     </div>
 
-    <div class="toolbar">
-        <div class="seg gm-only">
-            <button onclick="openAddModal('pc')" class="btn-amber">+ PC</button>
-            <button onclick="openAddModal('npc')" class="btn-blue">+ NPC</button>
-            <button onclick="openAddModal('enemy')" class="btn-red">+ Enemy</button>
-        </div>
-        <div class="seg gm-only">
-            <button onclick="rollAllInitiative()" class="btn-indigo" title="Roll 1d10 + Speed Factor (Lowest acts first)">🎲 Roll Init</button>
-            <button onclick="nextTurn()" class="btn-indigo-dark" title="Advance to next living combatant">⏭️ Next</button>
-            <button id="undoBtn" onclick="undoLast()" class="btn-gm-off" title="Undo the last HP change" disabled>↩ Undo</button>
-        </div>
-        <label class="chip gm-only" style="cursor:pointer;" title="Pan the map to each combatant when you press Next"><input type="checkbox" id="followTurn" onchange="setFollowTurn(this.checked)">📷 Follow</label>
-        <label class="chip gm-only" style="cursor:pointer;" title="Apply hit damage to the target right away"><input type="checkbox" id="autoApply" onchange="setAutoApply(this.checked)">⚡ Auto-apply</label>
+    <!-- TURN ORDER + CURRENT TARGET -->
+    <div class="subbar">
+        <div id="turnStrip" class="turn-strip"></div>
         <span id="targetChip" class="chip gm-only hidden" onclick="clearTarget()" title="Click to clear the target">🎯 <span id="targetName"></span> ✕</span>
-        <button id="revealAllBtn" onclick="revealAllHidden()" class="btn-gm-off gm-only" title="Reveal every hidden entity (and its map token) to players">👁 Reveal All</button>
-        <select id="groupFilter" onchange="renderRoster()" title="Filter roster" style="width:auto; color:#fbbf24; font-weight:700;">
-            <option value="all">All</option>
-            <option value="pc">PCs</option>
-            <option value="npc">NPCs</option>
-            <option value="enemy">Enemies</option>
-        </select>
-    </div>
-
-    <div class="xp-strip gm-only">
-        <div class="row-center">
-            <span class="text-muted">Combat XP Pool</span>
-            <span id="xpPoolDisplay" class="text-amber" style="font-size:14px;">0 XP</span>
-            <button id="clearXpBtn" onclick="clearXpPool()" class="btn-ghost hidden" title="Clear XP Pool">✕</button>
-        </div>
-        <button id="distributeXpBtn" onclick="distributeXpPool()" class="btn-amber">✨ Distribute to Party</button>
     </div>
 </header>
-
-<div id="turnStrip" class="turn-strip"></div>
 
 <!-- ROSTER CONTAINER -->
 <main id="rosterContainer"></main>
@@ -240,30 +410,15 @@
 <div id="logHistory" class="hidden"></div>
 <div id="actionLog" onclick="toggleLogHistory()" title="Click to show / hide recent rolls">
     <span id="actionLogText">Select a token or click any stat, save, or weapon button to roll...</span>
+    <span class="log-caret">▴</span>
 </div>
-
-<!-- FOOTER: OBR STATUS & BACKUP -->
-<footer class="row-between wrap">
-    <div class="row-center">
-        <span id="obrStatusDot" class="status-dot"></span>
-        <span id="obrStatusText">Browser Mode (Local Save)</span>
-    </div>
-    <div class="row-center gm-only">
-        <button onclick="syncAllTokensToMap()" class="btn-ghost" title="Push all linked stats badges to Owlbear Rodeo tokens">🔄 Sync Map Badges</button>
-        <button onclick="exportRosterJson()" class="btn-ghost">⬇ Export</button>
-        <label class="btn-ghost" style="cursor:pointer; border-radius:6px; padding:2px 6px;">
-            ⬆ Import
-            <input type="file" accept=".json" onchange="importRosterJson(event)" class="hidden">
-        </label>
-    </div>
-</footer>
 
 <!-- ADD/EDIT ENTITY MODAL -->
 <div id="entityModal" class="modal-backdrop hidden">
     <div class="modal-box">
         <div class="modal-head">
             <h2 id="modalTitle" class="title">Add Entity</h2>
-            <button type="button" id="autoCalcBtn" onclick="autoCalcAll2eStats(true)" class="btn-amber" title="Recalculate HP, THAC0, and Saving Throws from Class & Level">⚡ Auto-Calc 2e</button>
+            <button type="button" id="autoCalcBtn" onclick="autoCalcAll2eStats(true)" class="btn-amber" title="Recalculate HP, THAC0, and Saving Throws from Class & Level">⚡ Auto<span class="hide-narrow">-Calc 2e</span></button>
         </div>
 
         <div class="modal-body">
@@ -272,7 +427,7 @@
             <input type="hidden" id="modalImg">
 
             <div class="sec">
-                <div class="sec-title">Basics</div>
+                <div class="sec-title sec-head">Basics</div>
                 <div class="grid-2">
                     <div class="field"><label class="text-muted">Name</label><input type="text" id="modalName"></div>
                     <div class="field"><label class="text-muted">Group</label>
@@ -294,7 +449,7 @@
             </div>
 
             <div class="sec">
-                <div class="sec-title">Weapon &amp; Initiative</div>
+                <div class="sec-title sec-head">Weapon &amp; Initiative</div>
                 <div class="grid-2">
                     <div class="field"><label class="text-muted">Weapon Dice</label><input type="text" id="modalWeaponDice" value="1d8" style="text-align:center;"></div>
                     <div class="field"><label class="text-muted" title="Flat damage bonus (Str, magic, spec)">+Dmg Mod</label><input type="number" id="modalDmgMod" value="0"></div>
@@ -304,7 +459,7 @@
             </div>
 
             <div id="enemyFields" class="sec hidden">
-                <div class="sec-title">Monster</div>
+                <div class="sec-title sec-head">Monster</div>
                 <div class="grid-3">
                     <div class="field"><label class="text-muted">Hit Dice (HD)</label><input type="text" id="modalHd" value="3+1" onchange="autoCalcMonsterThac0()" style="text-align:center;" title="e.g. 3+1 (Auto-sets THAC0 = 20 - HD)"></div>
                     <div class="field"><label class="text-muted">Morale (2d10)</label><input type="number" id="modalMorale" value="12"></div>
@@ -314,7 +469,7 @@
 
             <div id="characterFields" style="display:flex; flex-direction:column; gap:10px;">
                 <div class="sec">
-                    <div class="sec-title">Class &amp; Level</div>
+                    <div class="sec-title sec-head">Class &amp; Level</div>
                     <div class="grid-2">
                         <div class="field"><label class="text-muted">Primary Class</label>
                             <select id="modalClass1" onchange="onClassSelectionChange()">
@@ -349,7 +504,7 @@
                 </div>
 
                 <div class="sec">
-                    <div class="row-between">
+                    <div class="row-between sec-head">
                         <div class="sec-title">Ability Scores</div>
                         <div id="excStrContainer" class="row-center hidden">
                             <span class="text-muted">Exceptional STR</span>
@@ -373,7 +528,7 @@
                 </div>
 
                 <div class="sec">
-                    <div class="sec-title" style="color:var(--green);">Saving Throws</div>
+                    <div class="sec-title sec-head" style="color:var(--green);">Saving Throws</div>
                     <div class="grid-5">
                         <div><span class="stat-label">PPD</span><input type="number" id="modalSavePPD" value="14" style="color:var(--green); font-weight:700;"></div>
                         <div><span class="stat-label">RSW</span><input type="number" id="modalSaveRSW" value="16" style="color:var(--green); font-weight:700;"></div>
@@ -384,7 +539,7 @@
                 </div>
 
                 <div class="sec">
-                    <div class="sec-title">Combat Status Tags</div>
+                    <div class="sec-title sec-head">Combat Status Tags</div>
                     <div class="chk-row" id="statusChecks"></div>
                 </div>
             </div>
@@ -399,6 +554,8 @@
         </div>
     </div>
 </div>
+
+</div><!-- /app -->
 
 <!-- MAIN SCRIPT -->
 <script>
@@ -1104,6 +1261,116 @@ const STATUS_LIST = ["Casting ⚡", "Blessed ✨", "Hasted 💨", "Slowed 🐌",
         return false;
     }
 
+    // ===================== v19: layout, menu, panel size =====================
+    let ui = { density: "auto", scale: 1, size: "" };
+    const SCALES = [0.8, 0.9, 1, 1.1, 1.25, 1.4];
+    const PANEL_SIZES = { S: [340, 500], M: [420, 640], L: [560, 780], XL: [720, 880] };
+
+    function loadUiPrefs() {
+        try {
+            const r = JSON.parse(localStorage.getItem("add2e_ui") || "{}");
+            if (["auto", "compact", "comfy"].includes(r.density)) ui.density = r.density;
+            if (SCALES.some(x => Math.abs(x - Number(r.scale)) < 0.01)) ui.scale = Number(r.scale);
+            if (PANEL_SIZES[r.size]) ui.size = r.size;
+        } catch (e) {}
+    }
+    function saveUiPrefs() {
+        try { localStorage.setItem("add2e_ui", JSON.stringify(ui)); } catch (e) {}
+    }
+
+    // Layout decisions use the *effective* size (real size divided by the text-size scale)
+    function applyLayout() {
+        const sc = ui.scale || 1;
+        const w = window.innerWidth / sc;
+        const h = window.innerHeight / sc;
+        const root = document.documentElement;
+        root.style.setProperty("--ui", sc);
+        root.style.setProperty("--effh", h + "px");
+        const cl = document.body.classList;
+        cl.toggle("dense", ui.density === "compact" || (ui.density === "auto" && (w < 480 || h < 640)));
+        cl.toggle("wide", w >= 760);
+        cl.toggle("narrow", w < 520 || h < 560);
+        cl.toggle("xs", w < 400);
+        const lbl = document.getElementById("scaleLbl");
+        if (lbl) lbl.textContent = Math.round(sc * 100) + "%";
+        updateSegStates();
+    }
+
+    function updateSegStates() {
+        document.querySelectorAll("#densitySeg button").forEach(b => b.classList.toggle("on", b.dataset.v === ui.density));
+        document.querySelectorAll("#sizeSeg button").forEach(b => b.classList.toggle("on", b.dataset.v === ui.size));
+    }
+
+    function setDensity(v) {
+        ui.density = v;
+        saveUiPrefs();
+        applyLayout();
+    }
+
+    function bumpScale(dir) {
+        let i = SCALES.findIndex(x => Math.abs(x - ui.scale) < 0.01);
+        if (i < 0) i = 2;
+        ui.scale = SCALES[Math.max(0, Math.min(SCALES.length - 1, i + dir))];
+        saveUiPrefs();
+        applyLayout();
+    }
+
+    function toggleTools(force) {
+        const t = document.getElementById("tools");
+        const b = document.getElementById("menuBtn");
+        if (!t) return;
+        const open = force !== undefined ? force : t.classList.contains("hidden");
+        t.classList.toggle("hidden", !open);
+        if (b) { b.setAttribute("aria-expanded", open ? "true" : "false"); b.classList.toggle("on", open); }
+    }
+    function closeTools() { toggleTools(false); }
+
+    // Opening / closing the Owlbear popover size. On the first run we only ever grow a small panel.
+    function panelLimits() {
+        return { maxW: Math.max(320, (window.screen.availWidth || 1400) - 80), maxH: Math.max(400, (window.screen.availHeight || 900) - 140) };
+    }
+    async function applyPanelSize() {
+        if (!isObrConnected || !OBR_SDK || !OBR_SDK.action || !PANEL_SIZES[ui.size]) return;
+        const lim = panelLimits();
+        const sz = PANEL_SIZES[ui.size];
+        try {
+            await OBR_SDK.action.setWidth(Math.min(sz[0], lim.maxW));
+            await OBR_SDK.action.setHeight(Math.min(sz[1], lim.maxH));
+        } catch (e) { console.warn("Panel resize failed:", e); }
+    }
+    async function ensureMinPanelSize() {
+        if (!OBR_SDK || !OBR_SDK.action) return;
+        try {
+            const lim = panelLimits();
+            const cw = await OBR_SDK.action.getWidth();
+            const ch = await OBR_SDK.action.getHeight();
+            const w = Math.max(cw, Math.min(PANEL_SIZES.M[0], lim.maxW));
+            const h = Math.max(ch, Math.min(PANEL_SIZES.M[1], lim.maxH));
+            if (w !== cw) await OBR_SDK.action.setWidth(w);
+            if (h !== ch) await OBR_SDK.action.setHeight(h);
+        } catch (e) {}
+    }
+    async function setPanelSize(key) {
+        ui.size = key;
+        saveUiPrefs();
+        updateSegStates();
+        await applyPanelSize();
+    }
+
+    // Sections of the edit window can be folded; on small panels only the essentials start open
+    function initModalSections() {
+        const small = document.body.classList.contains("dense") || document.body.classList.contains("narrow");
+        const keepOpen = ["Basics", "Weapon & Initiative", "Monster", "Class & Level"];
+        document.querySelectorAll("#entityModal .sec").forEach(sec => {
+            if (sec.offsetParent === null) return;
+            const t = sec.querySelector(".sec-title");
+            const title = t ? t.textContent.trim() : "";
+            sec.classList.toggle("collapsed", small && !keepOpen.includes(title));
+        });
+        const body = document.querySelector("#entityModal .modal-body");
+        if (body) body.scrollTop = 0;
+    }
+
     function gmOnly() {
         if (gmMode) return true;
         logAction("🔒 Only the GM can do that.");
@@ -1387,6 +1654,9 @@ const STATUS_LIST = ["Casting ⚡", "Blessed ✨", "Hasted 💨", "Slowed 🐌",
             groupWrapper.appendChild(header);
 
             if (collapsed) { container.appendChild(groupWrapper); return; }
+            const cardsBox = document.createElement("div");
+            cardsBox.className = "group-cards";
+            groupWrapper.appendChild(cardsBox);
 
             groupEntities.forEach(ent => {
                 const globalIdx = entities.findIndex(x => x.id === ent.id);
@@ -1445,17 +1715,18 @@ const STATUS_LIST = ["Casting ⚡", "Blessed ✨", "Hasted 💨", "Slowed 🐌",
                         <div class="who">
                             <div class="name">${ent.name} ${ent.tokenId ? '<span title="Linked to Owlbear Rodeo map token">🔗</span>' : ''}</div>
                             <div class="sub">${subText}</div>
-                            ${(statusBadgesHtml || isTurn || isMine || (ent.hidden && gmMode)) ? `<div class="tags">${isMine ? '<span class="you-pill">★ YOU</span>' : ''}${isTurn ? '<span class="turn-pill">⭐ ACTIVE</span>' : ''}${(ent.hidden && gmMode) ? '<span class="hidden-pill">🙈 HIDDEN</span>' : ''}${statusBadgesHtml}</div>` : ''}
                         </div>
                         <div class="actions">
                             ${gmMode ? `<button onclick="event.stopPropagation(); toggleTarget('${ent.id}')" title="Set / clear as attack target" class="${ent.id === currentTargetId ? 'btn-red' : 'btn-gm-off'} btn-icon">🎯</button>` : ''}
                             ${gmMode ? `<button onclick="event.stopPropagation(); toggleHidden('${ent.id}')" title="${ent.hidden ? 'Reveal to players' : 'Hide from players'}" class="${ent.hidden ? 'btn-indigo' : 'btn-gm-off'} btn-icon">${ent.hidden ? '🙈' : '👁'}</button>` : ''}
                             <button onclick="event.stopPropagation(); rollAttack('${ent.id}')" title="Roll 1d20 Attack vs THAC0" class="btn-amber btn-icon ${rollCls}">⚔️</button>
                             <button onclick="event.stopPropagation(); rollDamage('${ent.id}')" title="Roll Weapon Damage" class="btn-red btn-icon ${rollCls}">💥</button>
-                            <button onclick="event.stopPropagation(); openEditModal('${ent.id}')" title="Edit" class="btn-gm-off btn-icon gm-only">⚙️</button>
+                            <button onclick="event.stopPropagation(); openEditModal('${ent.id}')" title="Edit" class="btn-gm-off btn-icon gm-only edit-head">⚙️</button>
                         </div>
                     </div>
+                    ${(statusBadgesHtml || isTurn || isMine || (ent.hidden && gmMode)) ? `<div class="tagrow">${isMine ? '<span class="you-pill">★ YOU</span>' : ''}${isTurn ? '<span class="turn-pill">⭐ ACTIVE</span>' : ''}${(ent.hidden && gmMode) ? '<span class="hidden-pill">🙈 HIDDEN</span>' : ''}${statusBadgesHtml}</div>` : ''}
 
+                    <div class="vitals">
                     <div class="hp ${fillPct < 25 ? 'low' : ''}">
                         <div class="hp-fill" style="width:${fillPct}%"></div>
                         <span class="hp-ico">❤ HP</span>
@@ -1470,6 +1741,7 @@ const STATUS_LIST = ["Casting ⚡", "Blessed ✨", "Hasted 💨", "Slowed 🐌",
                         <div class="stat s-spd" title="Weapon Speed / Cast Time"><span class="lbl">Speed</span>${gmMode ? `<input type="number" class="val" value="${displaySpeed}" onchange="updateSpeed('${ent.id}', this.value)">` : `<span class="val">${isEnemy ? '??' : displaySpeed}</span>`}</div>
                         <div class="stat s-init" title="Initiative (lowest acts first)"><span class="lbl">Init</span><span class="val">${displayInit}</span></div>
                     </div>
+                    </div>
 
                     <div class="drawer ${(isExpanded && canAct) ? '' : 'hidden'}">
                         ${gmMode ? `
@@ -1479,7 +1751,7 @@ const STATUS_LIST = ["Casting ⚡", "Blessed ✨", "Hasted 💨", "Slowed 🐌",
                                     <button onclick="applyQuickHp('${ent.id}', -1)" class="btn-red">💔 Damage</button>
                                     <button onclick="applyQuickHp('${ent.id}', 1)" class="btn-emerald-outline">💚 Heal</button>
                                 </div>
-                                ${gmMode ? `<button onclick="duplicateEntity('${ent.id}')" class="btn-gm-off" title="Clone this entry (e.g. a second goblin)">📋 Duplicate</button>` : ''}
+                                ${gmMode ? `<span class="row-center"><button onclick="openEditModal('${ent.id}')" class="btn-gm-off" title="Edit this entry">⚙️ Edit</button><button onclick="duplicateEntity('${ent.id}')" class="btn-gm-off" title="Clone this entry (e.g. a second goblin)">📋 Duplicate</button></span>` : ''}
                             </div>
                         ` : ''}
                         ${gmMode ? conditionRowHtml(ent) : ''}
@@ -1546,7 +1818,7 @@ const STATUS_LIST = ["Casting ⚡", "Blessed ✨", "Hasted 💨", "Slowed 🐌",
                         `}
                     </div>
                 `;
-                groupWrapper.appendChild(card);
+                cardsBox.appendChild(card);
             });
             container.appendChild(groupWrapper);
         });
@@ -1963,6 +2235,7 @@ async function applyTokenVisibility(ent) {
     }
 
     function renderLogHistory() {
+        document.body.classList.toggle("log-open", logOpen);
         const el = document.getElementById("logHistory");
         if (!el) return;
         el.classList.toggle("hidden", !logOpen);
@@ -2020,6 +2293,7 @@ async function applyTokenVisibility(ent) {
         }
         const modal = document.getElementById("entityModal");
         if (modal) modal.classList.remove("hidden");
+        initModalSections();
     }
 
     function openEditModal(id) {
@@ -2084,6 +2358,7 @@ async function applyTokenVisibility(ent) {
         checkExceptionalStrengthVisibility();
         const modal = document.getElementById("entityModal");
         if (modal) modal.classList.remove("hidden");
+        initModalSections();
     }
 
     function closeAddModal() {
@@ -2291,6 +2566,22 @@ async function applyTokenVisibility(ent) {
         const aa = document.getElementById("autoApply");
         if (aa) aa.checked = autoApply;
     } catch (e) {}
+    loadUiPrefs();
+    applyLayout();
+    window.addEventListener("resize", applyLayout);
+    document.getElementById("entityModal").addEventListener("click", (e) => {
+        const head = e.target.closest(".sec-head");
+        if (head && !e.target.closest("select, input, button, label")) head.parentElement.classList.toggle("collapsed");
+    });
+    document.getElementById("tools").addEventListener("click", (e) => {
+        const btn = e.target.closest("button, .file-btn");
+        if (btn && !btn.closest(".segs") && btn.id !== "gmModeBtn") closeTools();
+    });
+    document.addEventListener("keydown", (e) => {
+        if (e.key !== "Escape") return;
+        const modal = document.getElementById("entityModal");
+        if (modal && !modal.classList.contains("hidden")) closeAddModal(); else closeTools();
+    });
     buildStatusChecks();
     loadLocalState();
     renderRoster();
@@ -2310,7 +2601,11 @@ async function applyTokenVisibility(ent) {
                     const dot = document.getElementById("obrStatusDot");
                     const txt = document.getElementById("obrStatusText");
                     if (dot) dot.classList.add("connected");
-                    if (txt) txt.innerText = "OBR Room Connected · v18 badges";
+                    if (txt) txt.innerText = "OBR Room Connected · v19 badges";
+                    if (dot) dot.title = "OBR Room Connected · v19 badges";
+                    const sizeRow = document.getElementById("sizeRow");
+                    if (sizeRow) sizeRow.classList.remove("hidden");
+                    if (ui.size) applyPanelSize(); else ensureMinPanelSize();
 
                     const role = await OBR_SDK.player.getRole();
                     setGmPermission(role === "GM");
